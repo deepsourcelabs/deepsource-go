@@ -1,0 +1,14 @@
+version = 1
+
+exclude_patterns = ["**/testdata/src/**"]
+
+[[analyzers]]
+name = "go"
+enabled = true
+
+  [analyzers.meta]
+  import_root = "github.com/deepsourcelabs/deepsource-go"
+
+[[transformers]]
+name = "gofumpt"
+enabled = true
