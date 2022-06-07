@@ -11,10 +11,9 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/deepsourcelabs/deepsource-go/sdk/types"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
 )
 
 type IssueMeta struct {
@@ -88,16 +87,9 @@ func readMarkdown(filename string) (string, error) {
 		return "", err
 	}
 
-	// TODO: sanitize HTML
+	// use the Github-flavored Markdown extension
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-		),
-		goldmark.WithRendererOptions(
-			html.WithHardWraps(),
-			html.WithXHTML(),
-		),
 	)
 
 	var buf bytes.Buffer
@@ -105,7 +97,12 @@ func readMarkdown(filename string) (string, error) {
 		return "", err
 	}
 
-	return buf.String(), nil
+	// sanitize markdown body
+	body := buf.String()
+	p := bluemonday.UGCPolicy()
+	sanitizedBody := p.Sanitize(body)
+
+	return sanitizedBody, nil
 }
 
 // BuildTOML uses issues to generate TOML files to a directory.
