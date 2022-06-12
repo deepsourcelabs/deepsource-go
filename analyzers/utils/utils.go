@@ -23,6 +23,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 )
 
+// IssueMeta represents the issue present in a TOML file.
 type IssueMeta struct {
 	Code             string `json:"code"`
 	Text             string `json:"text"`
@@ -30,6 +31,7 @@ type IssueMeta struct {
 	Description      string `json:"desc"`
 }
 
+// IssueTOML is used for decoding issues from a TOML file.
 type IssueTOML struct {
 	Issue []map[string]interface{}
 }
@@ -62,7 +64,7 @@ func exportJSON(report types.AnalysisReport, filename string) error {
 	return nil
 }
 
-// ParseIssues reads a JSON file containing all issues, and returns all issues.
+// ParseIssues reads a TOML file containing all issues, and returns all issues as []IssueMeta.
 func ParseIssues(filename string) ([]IssueMeta, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -99,6 +101,11 @@ func ParseIssues(filename string) ([]IssueMeta, error) {
 		issue.Description = desc
 		parsedIssues = append(parsedIssues, issue)
 	}
+
+	// sort issues (based on issue code) before returning
+	sort.Slice(parsedIssues, func(i, j int) bool {
+		return parsedIssues[i].Code < parsedIssues[j].Code
+	})
 
 	return parsedIssues, nil
 }

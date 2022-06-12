@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/BurntSushi/toml"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/types"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/utils"
 )
@@ -103,8 +106,8 @@ func (s *StaticCheckProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, 
 	return report, nil
 }
 
-func TestStaticCheck(t *testing.T) {
-	t.Run("staticcheck analyzer", func(t *testing.T) {
+func TestAnalyzer(t *testing.T) {
+	t.Run("wet run", func(t *testing.T) {
 		a := CLIAnalyzer{
 			Name:      "staticcheck",
 			Command:   "staticcheck",
@@ -153,9 +156,41 @@ func TestStaticCheck(t *testing.T) {
 		}
 
 		// test TOML generation
-		err = a.GenerateTOML("testdata/issues.toml", "testdata/toml")
+
+		// fetch parsed issues
+		issues, err := utils.ParseIssues("testdata/issues.toml")
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		// generate TOML files
+		err = utils.BuildTOML(issues, "testdata/toml")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// traverse directory
+		files, err := os.ReadDir("testdata/toml")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// parse issues from each TOML file
+		var parsedIssue utils.IssueMeta
+		var parsedIssues []utils.IssueMeta
+
+		for _, f := range files {
+			filePath := path.Join("testdata/toml", f.Name())
+			_, err = toml.DecodeFile(filePath, &parsedIssue)
+			if err != nil {
+				t.Fatal(err)
+			}
+			parsedIssues = append(parsedIssues, parsedIssue)
+		}
+
+		// check if the parsed issues and the issues present in the parent TOML are equal
+		if !reflect.DeepEqual(issues, parsedIssues) {
+			t.Fatal(errors.New("mismatch between issues in parent TOML file and parsed issues"))
 		}
 
 		// cleanup TOMLs
