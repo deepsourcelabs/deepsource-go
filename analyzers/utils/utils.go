@@ -140,7 +140,10 @@ func BuildTOML(issues []IssueMeta, rootDir string) error {
 
 		// if rootDir doesn't exist, create one
 		if _, err := os.Stat(rootDir); err != nil {
-			os.Mkdir(rootDir, 0700)
+			err = os.Mkdir(rootDir, 0700)
+			if err != nil {
+				return err
+			}
 		}
 
 		// generate file path based on root directory and filename
