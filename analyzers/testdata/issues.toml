@@ -1,0 +1,17 @@
+[[issue]]
+
+Code = "SA4017"
+Text = "Sprint is a pure function but its return value is ignored"
+ShortDescription = "Sprint is a pure function but its return value is ignored"
+Description = """
+## hello
+"""
+
+[[issue]]
+
+Code = "S1039"
+Text = "unnecessary use of fmt.Sprint"
+ShortDescription = "unnecessary use of fmt.Sprint"
+Description = """
+## Example
+"""
