@@ -15,19 +15,10 @@ type Location struct {
 	Position Position `json:"position"`
 }
 
-type SourceCode struct {
-	Rendered []byte `json:"rendered"`
-}
-
-type ProcessedData struct {
-	SourceCode SourceCode `json:"source_code,omitempty"`
-}
-
 type Issue struct {
-	IssueCode     string        `json:"issue_code"`
-	IssueText     string        `json:"issue_text"`
-	Location      Location      `json:"location"`
-	ProcessedData ProcessedData `json:"processed_data,omitempty"`
+	IssueCode string   `json:"issue_code"`
+	IssueText string   `json:"issue_text"`
+	Location  Location `json:"location"`
 }
 
 // Location of an issue

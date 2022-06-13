@@ -2,18 +2,19 @@ package analyzers
 
 import (
 	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"os/exec"
 
 	"github.com/deepsourcelabs/deepsource-go/analyzers/types"
-	"github.com/deepsourcelabs/deepsource-go/analyzers/utils"
 )
 
 type Processor interface {
 	Process(bytes.Buffer) (types.AnalysisReport, error)
 }
 
-// CLIAnalyzer is used for creating an analyzer.
-type CLIAnalyzer struct {
+// CLIRunner is used for creating an analyzer.
+type CLIRunner struct {
 	Name             string
 	Command          string
 	Args             []string
@@ -25,17 +26,17 @@ type CLIAnalyzer struct {
 }
 
 // Stdout returns the stdout buffer.
-func (a *CLIAnalyzer) Stdout() bytes.Buffer {
+func (a *CLIRunner) Stdout() bytes.Buffer {
 	return *a.stdout
 }
 
 // Stderr returns the stderr buffer.
-func (a *CLIAnalyzer) Stderr() bytes.Buffer {
+func (a *CLIRunner) Stderr() bytes.Buffer {
 	return *a.stderr
 }
 
 // Run executes the analyzer and streams the output to the processor.
-func (a *CLIAnalyzer) Run() error {
+func (a *CLIRunner) Run() error {
 	outBuf, errBuf, exitCode, err := runCmd(a.Command, a.Args, a.AllowedExitCodes)
 	if err != nil {
 		return err
@@ -83,17 +84,14 @@ func runCmd(command string, args []string, allowedExitCodes []int) (bytes.Buffer
 	return outBuf, errBuf, 0, nil
 }
 
-// GenerateTOML helps in generating TOML files for each issue from a JSON file.
-func (a *CLIAnalyzer) GenerateTOML(filename string, rootDir string) error {
-	// fetch parsed issues
-	issues, err := utils.ParseIssues(filename)
+// SaveReport saves the analysis report to the local filesystem.
+func (a *CLIRunner) SaveReport(report types.AnalysisReport, filename string) error {
+	data, err := json.MarshalIndent(report, "", "	")
 	if err != nil {
 		return err
 	}
 
-	// generate TOML files
-	err = utils.BuildTOML(issues, rootDir)
-	if err != nil {
+	if err = ioutil.WriteFile(filename, data, 0644); err != nil {
 		return err
 	}
 

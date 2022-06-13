@@ -5,7 +5,7 @@ In this example, we will be writing a custom analyzer for [staticcheck](https://
 ## How to a write a custom analyzer?
 
 The flow of writing a custom analyzer using the SDK, is as follows:
-- Create an analyzer (`CLIAnalyzer`)
+- Create an analyzer (`CLIRunner`)
 - Run the analyzer (`Run()`)
 - Use the processor to fetch a DeepSource-compatible report (`Processor.Process()`)
 - Persist the report to the local filesystem using `SaveReport`
@@ -26,7 +26,7 @@ import (
 
 func main() {
     // create a CLI analyzer
-	a := analyzers.CLIAnalyzer{
+	a := analyzers.CLIRunner{
 		Name:      "staticcheck", // name of the analyzer
 		Command:   "staticcheck", // main command
 		Args:      []string{"-f", "text", "./..."}, // args

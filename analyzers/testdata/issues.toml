@@ -1,17 +1,17 @@
-[[issue]]
+[[issues]]
 
-Code = "SA4017"
-Text = "Sprint is a pure function but its return value is ignored"
-ShortDescription = "Sprint is a pure function but its return value is ignored"
+IssueCode = "SA4017"
+Category = "bug risk"
+Title = "Sprint is a pure function but its return value is ignored"
 Description = """
 ## hello
 """
 
-[[issue]]
+[[issues]]
 
-Code = "S1039"
-Text = "unnecessary use of fmt.Sprint"
-ShortDescription = "unnecessary use of fmt.Sprint"
+IssueCode = "S1039"
+Category = "style"
+Title = "unnecessary use of fmt.Sprint"
 Description = """
 ## Example
 """

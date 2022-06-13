@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
+	"github.com/deepsourcelabs/deepsource-go/analyzers/analysistest"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/types"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/utils"
 )
@@ -107,11 +108,11 @@ func (s *StaticCheckProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, 
 }
 
 func TestAnalyzer(t *testing.T) {
-	t.Run("wet run", func(t *testing.T) {
-		a := CLIAnalyzer{
+	t.Run("Run staticcheck as DeepSource Analyzer", func(t *testing.T) {
+		a := CLIRunner{
 			Name:      "staticcheck",
 			Command:   "staticcheck",
-			Args:      []string{"-f", "text", "./testdata/triggers/staticcheck/..."},
+			Args:      []string{"-f", "text", "./testdata/src/staticcheck/..."},
 			Processor: &StaticCheckProcessor{},
 		}
 
@@ -126,13 +127,13 @@ func TestAnalyzer(t *testing.T) {
 		}
 
 		// save report
-		err = utils.SaveReport(processedReport, "testdata/triggers/staticcheck/issues.json", "json")
+		err = a.SaveReport(processedReport, "testdata/src/staticcheck/issues.json")
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// read the generated report
-		reportContent, err := os.ReadFile("testdata/triggers/staticcheck/issues.json")
+		reportContent, err := os.ReadFile("testdata/src/staticcheck/issues.json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -144,13 +145,13 @@ func TestAnalyzer(t *testing.T) {
 		}
 
 		// do a verification check for the generated report
-		err = utils.Verify(report, "testdata/triggers/staticcheck/staticcheck.go")
+		err = analysistest.Verify(report, "testdata/src/staticcheck/staticcheck.go")
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// cleanup after test
-		err = os.Remove("testdata/triggers/staticcheck/issues.json")
+		err = os.Remove("testdata/src/staticcheck/issues.json")
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -10,10 +10,12 @@ import (
 	"github.com/deepsourcelabs/deepsource-go/analyzers/types"
 )
 
-// UnixProcessor is a processor for unix-formatted strings.
-type UnixProcessor struct{}
+// RegexProcessor utilizes regular expressions for processing.
+type RegexProcessor struct {
+	Pattern string
+}
 
-func (u *UnixProcessor) Unix(buf bytes.Buffer) (types.AnalysisReport, error) {
+func (r *RegexProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, error) {
 	var issues []types.Issue
 
 	// trim newline from buffer output
@@ -26,7 +28,7 @@ func (u *UnixProcessor) Unix(buf bytes.Buffer) (types.AnalysisReport, error) {
 			break
 		}
 
-		// compile regular expression for parsing unix format
+		// TODO: test processor
 
 		// group descriptions:
 		// 0: complete string
@@ -34,7 +36,7 @@ func (u *UnixProcessor) Unix(buf bytes.Buffer) (types.AnalysisReport, error) {
 		// 2: line number
 		// 3: column number
 		// 4: message
-		exp, err := regexp.Compile("(.+):(.):(.): (.+)")
+		exp, err := regexp.Compile(r.Pattern)
 		if err != nil {
 			return types.AnalysisReport{}, err
 		}
