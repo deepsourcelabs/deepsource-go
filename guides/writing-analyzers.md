@@ -10,146 +10,113 @@ The flow of writing a custom analyzer using the SDK, is as follows:
 - Use the processor to fetch a DeepSource-compatible report (`Processor.Process()`)
 - Persist the report to the local filesystem using `SaveReport`
 
-## Setting up
+## Getting Started
 
-Let's add this to our `main.go`:
+### Setting up our analyzer
+
+The analyzer should contain the following:
+- `Name`: Name of the analyzer
+- `Command`: The main command for the CLI tool (for example, `staticcheck`, etc.)
+- `Args`: Arguments for `Command`.
+- `Processor`: Processor used for parsing the output of the CLI analyzer
+
+The analyzer can be executed using `Run()`, which executes the CLI (`Command` along with its `Args`). The output of the CLI is stored to its respective buffers. (`stdout` and `stderr`; accessible through `a.Stdout()` and `a.Stderr()`)
+
+Here is the code for the analyzer:
 
 ```go
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/deepsourcelabs/deepsource-go/analyzers"
-	"github.com/deepsourcelabs/deepsource-go/analyzers/utils"
+	"github.com/deepsourcelabs/deepsource-go/analyzers/processors"
 )
 
 func main() {
-    // create a CLI analyzer
 	a := analyzers.CLIRunner{
-		Name:      "staticcheck", // name of the analyzer
-		Command:   "staticcheck", // main command
-		Args:      []string{"-f", "text", "./..."}, // args
-		Processor: &StaticCheckProcessor{}, // processor
+		Name:      "staticcheck",
+		Command:   "staticcheck",
+		Args:      []string{"-f", "text", "./..."},
+		Processor: &processor, <=== will be implemented later
 	}
 
-    // run the analyzer
 	err := a.Run()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-    // process the output from staticcheck using the stdout stream
-	report, err := a.Processor.Process(a.Stdout())
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-    // save report to a JSON file
-	err = utils.SaveReport(report, "issues.json", "json")
 	if err != nil {
 		log.Fatalln(err)
 	}
 }
 ```
 
-## Implementing our custom processor
+### Using processors
 
 A processor is used for converting the result returned by the custom analyzer into a DeepSource-compatible report. The processor must implement `Process()`.
 
-If the analyzer's output format is common in nature (unix-style, etc.), the SDK provides pre-built processors for usage.
+Let's use the built-in `RegexProcessor`. The pattern used by `RegexProcessor` should have the following groups:
 
-Since `staticcheck`'s output format is not common in nature, we need to implement the processor for our `staticcheck` analyzer.
+- `filename`
+- `line`
+- `column`
+- `message`
+- `issue_code`
+
+`RegexProcessor` uses these named groups to populate issues.
 
 ```go
-type StaticCheckProcessor struct{}
+package main
 
-// StaticCheck processor returns a DeepSource-compatible analysis report from staticcheck's results.
-func (s *StaticCheckProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, error) {
-	var issues []types.Issue
+import (
+	"fmt"
+	"log"
 
-	// trim newline from buffer output
-	lines := strings.Split(buf.String(), "\n")
+	"github.com/deepsourcelabs/deepsource-go/analyzers"
+	"github.com/deepsourcelabs/deepsource-go/analyzers/processors"
+)
 
-	for _, line := range lines {
-		// trim spaces
-		line = strings.TrimSpace(line)
-		if line == "" {
-			break
-		}
-
-		// compile regular expression for parsing unix format
-
-		// group descriptions:
-		// 0: complete string
-		// 1: path
-		// 2: line number
-		// 3: column number
-		// 4: message
-		exp, err := regexp.Compile("(.+):(.):(.): (.+)")
-		if err != nil {
-			return types.AnalysisReport{}, err
-		}
-
-		// get groups
-		groups := exp.FindAllStringSubmatch(strings.TrimSuffix(line, "\n"), -1)
-		if len(groups) == 0 {
-			return types.AnalysisReport{}, errors.New("failed to parse output string")
-		}
-
-		// convert line and column numbers to int
-		line, err := strconv.Atoi(groups[0][2])
-		if err != nil {
-			return types.AnalysisReport{}, err
-		}
-
-		col, err := strconv.Atoi(groups[0][3])
-		if err != nil {
-			return types.AnalysisReport{}, err
-		}
-
-		// compile regular expression for parsing staticcheck message
-
-		// group descriptions:
-		// 0: complete string
-		// 1: partial message string
-		// 2: issue code
-		// 3: parentheses
-		messageExp, err := regexp.Compile("(.+)[(](.+)(.+)")
-		if err != nil {
-			return types.AnalysisReport{}, err
-		}
-		messageGroups := messageExp.FindAllStringSubmatch(groups[0][4], -1)
-		if len(messageGroups) == 0 {
-			return types.AnalysisReport{}, errors.New("failed to parse message")
-		}
-
-		// populate issue
-		issue := types.Issue{
-			IssueCode: messageGroups[0][2],
-			IssueText: groups[0][4],
-			Location: types.Location{
-				Path: groups[0][1],
-				Position: types.Position{
-					Begin: types.Coordinate{
-						Line:   line,
-						Column: col,
-					},
-				},
-			},
-		}
-
-		issues = append(issues, issue)
+func main() {
+	processor := processors.RegexProcessor{
+		Pattern: `(?P<filename>.+):(?P<line>\d+):(?P<column>\d+): (?P<message>.+)\((?P<issue_code>\w+)\)`,
 	}
 
-	// populate report
-	report := types.AnalysisReport{
-		Issues: issues,
+	a := analyzers.CLIRunner{
+		Name:      "staticcheck",
+		Command:   "staticcheck",
+		Args:      []string{"-f", "text", "./..."},
+		Processor: &processor,
 	}
 
-	// return report
-	return report, nil
+	err := a.Run()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	report, err := a.Processor.Process(a.Stdout())
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
+```
+
+### Saving the report
+
+For persisting the report fetched from our processor, we can use `SaveReport`.
+
+> **Note**:
+>
+> `SaveReport` requires `TOOLBOX_PATH` to be set in the environment variables.
+
+The report is then saved to `$TOOLBOX_PATH/analysis_report.json`.
+
+```go
+
+	(previous code)
+
+	err = a.SaveReport(report)
+	if err != nil {
+		log.Fatalln(err)
+	}
 ```
 
 ## Running our analyzer
@@ -178,7 +145,7 @@ This is helpful for developers who wish to define custom issues for their analyz
 For example, we have `issues.toml` as the file containing details for all issues:
 
 ```toml
-[[issue]]
+[[issues]]
 
 Code = "SA4017"
 Text = "Sprint is a pure function but its return value is ignored"
@@ -188,19 +155,25 @@ Description = """
 """
 ```
 
-`GenerateTOML` reads `issues.toml`, and generates TOML files for each issue, where the filename is the issue code:
+> **Note**:
+>
+> `GenerateTOML` requires `REPO_ROOT` to be set in the environment variables.
+
+`GenerateTOML` reads `$REPO_ROOT/.deepsource/analyzers/issues.toml`, and generates TOML files for each issue, where the filename is the issue code.
+
+The TOML files are generated at `$REPO_ROOT/.deepsource/analyzers/issues/<IssueCode>.toml`.
 
 ```go
     // previous code
 
     // generate TOML files for each issue from a parent TOML file
-	err = a.GenerateTOML("issues.toml", "toml")
+	err = GenerateTOML()
 	if err != nil {
 		log.Fatalln(err)
 	}
 ```
 
-On inspecting `toml/SA4017.toml`, we can see the following contents:
+On inspecting `$REPO_ROOT/.deepsource/analyzers/issues/SA4017.toml`, we can see the following contents:
 
 ```toml
 Code = "SA4017"

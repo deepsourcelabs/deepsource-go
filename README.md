@@ -28,7 +28,7 @@ The Go SDK makes it easier for developers to integrate an existing analyzer with
 
 Here are some extensive guides on working with the SDK:
 
-- [Writing your own analyzer](guides/writing-analyzers.md)
+- [Writing custom analyzers](guides/writing-analyzers.md)
 
 ## Community
 
