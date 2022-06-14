@@ -26,14 +26,14 @@ func TestAnalyzer(t *testing.T) {
 			Pattern: `(?P<filename>.+):(?P<line>\d+):(?P<column>\d+): (?P<message>.+)\((?P<issue_code>\w+)\)`,
 		}
 
-		a := CLIRunner{
+		a := &CLIRunner{
 			Name:      "staticcheck",
 			Command:   "staticcheck",
 			Args:      []string{"-f", "text", "./testdata/src/staticcheck/..."},
 			Processor: &rp,
 		}
 
-		err := testAnalyzer(a, tempDir, "testdata/src/staticcheck/staticcheck.go")
+		err := testRunner(a, tempDir, "testdata/src/staticcheck/staticcheck.go")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -64,21 +64,21 @@ func TestAnalyzer(t *testing.T) {
 			IssueCodeProcessor: issueProcessor,
 		}
 
-		a := CLIRunner{
+		a := &CLIRunner{
 			Name:      "csslint",
 			Command:   "csslint",
 			Args:      []string{"--format=compact", "."},
 			Processor: &rp,
 		}
 
-		err := testAnalyzer(a, tempDir, "testdata/src/csslint/csslint.css")
+		err := testRunner(a, tempDir, "testdata/src/csslint/csslint.css")
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
 }
 
-func testAnalyzer(a CLIRunner, tempDir string, triggerFilename string) error {
+func testRunner(a *CLIRunner, tempDir string, triggerFilename string) error {
 	err := a.Run()
 	if err != nil {
 		return err
