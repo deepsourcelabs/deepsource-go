@@ -28,49 +28,45 @@ func (r *RegexProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, error)
 			break
 		}
 
-		// TODO: test processor
-
-		// group descriptions:
-		// 0: complete string
-		// 1: path
-		// 2: line number
-		// 3: column number
-		// 4: message
 		exp, err := regexp.Compile(r.Pattern)
 		if err != nil {
 			return types.AnalysisReport{}, err
 		}
 
 		// get groups
+		groupNames := exp.SubexpNames()
+
+		var issue types.Issue
 		groups := exp.FindAllStringSubmatch(strings.TrimSuffix(line, "\n"), -1)
+		for groupIdx, content := range groups[0] {
+			groupName := groupNames[groupIdx]
+
+			// populate issue using named groups
+			switch groupName {
+			case "filename":
+				issue.Location.Path = content
+			case "line":
+				line, err := strconv.Atoi(content)
+				if err != nil {
+					return types.AnalysisReport{}, err
+				}
+				issue.Location.Position.Begin.Line = line
+			case "column":
+				col, err := strconv.Atoi(content)
+				if err != nil {
+					return types.AnalysisReport{}, err
+				}
+				issue.Location.Position.Begin.Column = col
+			case "message":
+				issue.IssueText = content
+			case "issue_code":
+				issue.IssueCode = content
+			default:
+				continue
+			}
+		}
 		if len(groups) == 0 {
 			return types.AnalysisReport{}, errors.New("failed to parse message")
-		}
-
-		// convert line and column numbers to int
-		line, err := strconv.Atoi(groups[0][2])
-		if err != nil {
-			return types.AnalysisReport{}, err
-		}
-
-		col, err := strconv.Atoi(groups[0][3])
-		if err != nil {
-			return types.AnalysisReport{}, err
-		}
-
-		// populate issue
-		issue := types.Issue{
-			IssueCode: "",
-			IssueText: groups[0][4],
-			Location: types.Location{
-				Path: groups[0][1],
-				Position: types.Position{
-					Begin: types.Coordinate{
-						Line:   line,
-						Column: col,
-					},
-				},
-			},
 		}
 
 		issues = append(issues, issue)

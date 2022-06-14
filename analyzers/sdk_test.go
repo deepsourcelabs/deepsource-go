@@ -21,7 +21,7 @@ import (
 type StaticCheckProcessor struct{}
 
 // StaticCheck processor returns a DeepSource-compatible analysis report from staticcheck's results.
-func (s *StaticCheckProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, error) {
+func (*StaticCheckProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, error) {
 	var issues []types.Issue
 
 	// trim newline from buffer output
@@ -109,6 +109,11 @@ func (s *StaticCheckProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, 
 
 func TestAnalyzer(t *testing.T) {
 	t.Run("Run staticcheck as DeepSource Analyzer", func(t *testing.T) {
+		// set environment variables
+		tempDir := t.TempDir()
+		t.Setenv("TOOLBOX_PATH", tempDir)
+		t.Setenv("REPO_ROOT", tempDir)
+
 		a := CLIRunner{
 			Name:      "staticcheck",
 			Command:   "staticcheck",
@@ -127,13 +132,14 @@ func TestAnalyzer(t *testing.T) {
 		}
 
 		// save report
-		err = a.SaveReport(processedReport, "testdata/src/staticcheck/issues.json")
+		err = a.SaveReport(processedReport)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// read the generated report
-		reportContent, err := os.ReadFile("testdata/src/staticcheck/issues.json")
+		generatedFile := path.Join(tempDir, "analysis_report.json")
+		reportContent, err := os.ReadFile(generatedFile)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -151,7 +157,7 @@ func TestAnalyzer(t *testing.T) {
 		}
 
 		// cleanup after test
-		err = os.Remove("testdata/src/staticcheck/issues.json")
+		err = os.Remove(generatedFile)
 		if err != nil {
 			t.Fatal(err)
 		}

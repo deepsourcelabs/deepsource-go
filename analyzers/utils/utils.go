@@ -29,15 +29,19 @@ type IssueTOML struct {
 }
 
 // GenerateTOML helps in generating TOML files for each issue from a TOML file.
-func GenerateTOML(filename string, rootDir string) error {
+func GenerateTOML() error {
+	// root directory for the repository
+	repoRoot := os.Getenv("REPO_ROOT")
+
 	// fetch parsed issues
-	// TODO: move parse issues
+	filename := path.Join(repoRoot, ".deepsource/analyzers/issues.toml")
 	issues, err := ParseIssues(filename)
 	if err != nil {
 		return err
 	}
 
 	// generate TOML files
+	rootDir := path.Join(repoRoot, ".deepsource/analyzers/issues")
 	err = BuildTOML(issues, rootDir)
 	if err != nil {
 		return err

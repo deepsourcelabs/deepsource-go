@@ -3,8 +3,9 @@ package analyzers
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"os/exec"
+	"path"
 
 	"github.com/deepsourcelabs/deepsource-go/analyzers/types"
 )
@@ -85,13 +86,19 @@ func runCmd(command string, args []string, allowedExitCodes []int) (bytes.Buffer
 }
 
 // SaveReport saves the analysis report to the local filesystem.
-func (a *CLIRunner) SaveReport(report types.AnalysisReport, filename string) error {
+func (*CLIRunner) SaveReport(report types.AnalysisReport) error {
+	// get toolbox path from environment variable
+	toolboxPath := os.Getenv("TOOLBOX_PATH")
+
+	// set report location
+	filename := path.Join(toolboxPath, "analysis_report.json")
+
 	data, err := json.MarshalIndent(report, "", "	")
 	if err != nil {
 		return err
 	}
 
-	if err = ioutil.WriteFile(filename, data, 0644); err != nil {
+	if err = os.WriteFile(filename, data, 0644); err != nil {
 		return err
 	}
 
