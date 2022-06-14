@@ -121,19 +121,66 @@ The report is then saved to `$TOOLBOX_PATH/analysis_report.json`.
 
 ## Running our analyzer
 
-Wow! We just implemented our own custom analyzer!
-
-On running the analyzer, we must see the report saved as a JSON file:
+On running the analyzer, we must see the report saved as a JSON file (under `$TOOLBOX_PATH/analysis_report.json`):
 
 ```json
-[
-    {
-        "code": "SA4017",
-        "text": "Sprint is a pure function but its return value is ignored",
-        "short_desc": "Sprint is a pure function but its return value is ignored",
-        "desc": "/home/aadhav/analyzer-go-sdk/playground/sa4017.md"
-    }
-]
+{
+	"issues": [
+		{
+			"issue_code": "U1000",
+			"issue_text": "func trigger is unused ",
+			"location": {
+				"path": "analyzers/testdata/src/staticcheck/staticcheck.go",
+				"position": {
+					"begin": {
+						"line": 5,
+						"column": 6
+					},
+					"end": {
+						"line": 0,
+						"column": 0
+					}
+				}
+			}
+		},
+		{
+			"issue_code": "SA4017",
+			"issue_text": "Sprint is a pure function but its return value is ignored ",
+			"location": {
+				"path": "analyzers/testdata/src/staticcheck/staticcheck.go",
+				"position": {
+					"begin": {
+						"line": 6,
+						"column": 2
+					},
+					"end": {
+						"line": 0,
+						"column": 0
+					}
+				}
+			}
+		},
+		{
+			"issue_code": "S1039",
+			"issue_text": "unnecessary use of fmt.Sprint ",
+			"location": {
+				"path": "analyzers/testdata/src/staticcheck/staticcheck.go",
+				"position": {
+					"begin": {
+						"line": 6,
+						"column": 2
+					},
+					"end": {
+						"line": 0,
+						"column": 0
+					}
+				}
+			}
+		}
+	],
+	"errors": null,
+	"extra_data": null
+}
 ```
 
 ## Generating TOML files for issues

@@ -10,9 +10,13 @@ import (
 	"github.com/deepsourcelabs/deepsource-go/analyzers/types"
 )
 
+// IssueCodeProcessor is used when an analyzer doesn't support issue codes. IssueCodeProcessor takes in the content of the "issue_code" named group and returns an appropriate issue code. If not implemented, it fallbacks to using the content as the issue code.
+type IssueCodeProcessor func(string) string
+
 // RegexProcessor utilizes regular expressions for processing.
 type RegexProcessor struct {
-	Pattern string
+	Pattern            string
+	IssueCodeProcessor IssueCodeProcessor
 }
 
 func (r *RegexProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, error) {
@@ -60,7 +64,11 @@ func (r *RegexProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, error)
 			case "message":
 				issue.IssueText = content
 			case "issue_code":
-				issue.IssueCode = content
+				if r.IssueCodeProcessor == nil {
+					issue.IssueCode = content
+				} else {
+					issue.IssueCode = r.IssueCodeProcessor(content)
+				}
 			default:
 				continue
 			}
