@@ -1,111 +1,19 @@
 package analyzers
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
 	"path"
 	"reflect"
-	"regexp"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/BurntSushi/toml"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/analysistest"
+	"github.com/deepsourcelabs/deepsource-go/analyzers/processors"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/types"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/utils"
 )
-
-type StaticCheckProcessor struct{}
-
-// StaticCheck processor returns a DeepSource-compatible analysis report from staticcheck's results.
-func (*StaticCheckProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, error) {
-	var issues []types.Issue
-
-	// trim newline from buffer output
-	lines := strings.Split(buf.String(), "\n")
-
-	for _, line := range lines {
-		// trim spaces
-		line = strings.TrimSpace(line)
-		if line == "" {
-			break
-		}
-
-		// compile regular expression for parsing unix format
-
-		// group descriptions:
-		// 0: complete string
-		// 1: path
-		// 2: line number
-		// 3: column number
-		// 4: message
-		exp, err := regexp.Compile("(.+):(.):(.): (.+)")
-		if err != nil {
-			return types.AnalysisReport{}, err
-		}
-
-		// get groups
-		groups := exp.FindAllStringSubmatch(strings.TrimSuffix(line, "\n"), -1)
-		if len(groups) == 0 {
-			return types.AnalysisReport{}, errors.New("failed to parse output string")
-		}
-
-		// convert line and column numbers to int
-		line, err := strconv.Atoi(groups[0][2])
-		if err != nil {
-			return types.AnalysisReport{}, err
-		}
-
-		col, err := strconv.Atoi(groups[0][3])
-		if err != nil {
-			return types.AnalysisReport{}, err
-		}
-
-		// compile regular expression for parsing staticcheck message
-
-		// group descriptions:
-		// 0: complete string
-		// 1: partial message string
-		// 2: issue code
-		// 3: parentheses
-		messageExp, err := regexp.Compile("(.+)[(](.+)(.+)")
-		if err != nil {
-			return types.AnalysisReport{}, err
-		}
-		messageGroups := messageExp.FindAllStringSubmatch(groups[0][4], -1)
-		if len(messageGroups) == 0 {
-			return types.AnalysisReport{}, errors.New("failed to parse message")
-		}
-
-		// populate issue
-		issue := types.Issue{
-			IssueCode: messageGroups[0][2],
-			IssueText: groups[0][4],
-			Location: types.Location{
-				Path: groups[0][1],
-				Position: types.Position{
-					Begin: types.Coordinate{
-						Line:   line,
-						Column: col,
-					},
-				},
-			},
-		}
-
-		issues = append(issues, issue)
-	}
-
-	// populate report
-	report := types.AnalysisReport{
-		Issues: issues,
-	}
-
-	// return report
-	return report, nil
-}
 
 func TestAnalyzer(t *testing.T) {
 	t.Run("Run staticcheck as DeepSource Analyzer", func(t *testing.T) {
@@ -114,56 +22,109 @@ func TestAnalyzer(t *testing.T) {
 		t.Setenv("TOOLBOX_PATH", tempDir)
 		t.Setenv("REPO_ROOT", tempDir)
 
+		rp := processors.RegexProcessor{
+			Pattern: `(?P<filename>.+):(?P<line>\d+):(?P<column>\d+): (?P<message>.+)\((?P<issue_code>\w+)\)`,
+		}
+
 		a := CLIRunner{
 			Name:      "staticcheck",
 			Command:   "staticcheck",
 			Args:      []string{"-f", "text", "./testdata/src/staticcheck/..."},
-			Processor: &StaticCheckProcessor{},
+			Processor: &rp,
 		}
 
-		err := a.Run()
+		err := testAnalyzer(a, tempDir, "testdata/src/staticcheck/staticcheck.go")
 		if err != nil {
 			t.Fatal(err)
 		}
+	})
 
-		processedReport, err := a.Processor.Process(a.Stdout())
+	t.Run("Run csslint as DeepSource Analyzer", func(t *testing.T) {
+		// set environment variables
+		tempDir := t.TempDir()
+		t.Setenv("TOOLBOX_PATH", tempDir)
+		t.Setenv("REPO_ROOT", tempDir)
+
+		issueProcessor := func(content string) string {
+			issueMap := map[string]string{
+				"empty-rules":      "E001",
+				"errors":           "E002",
+				"known-properties": "K001",
+			}
+
+			if issueMap[content] == "" {
+				return "U001"
+			}
+
+			return issueMap[content]
+		}
+
+		rp := processors.RegexProcessor{
+			Pattern:            `(?P<filename>.+): line (?P<line>\d+), col (?P<column>\d+), (?P<message>.+) \((?P<issue_code>.+)\)`,
+			IssueCodeProcessor: issueProcessor,
+		}
+
+		a := CLIRunner{
+			Name:      "csslint",
+			Command:   "csslint",
+			Args:      []string{"--format=compact", "."},
+			Processor: &rp,
+		}
+
+		err := testAnalyzer(a, tempDir, "testdata/src/csslint/csslint.css")
 		if err != nil {
 			t.Fatal(err)
 		}
+	})
+}
 
-		// save report
-		err = a.SaveReport(processedReport)
-		if err != nil {
-			t.Fatal(err)
-		}
+func testAnalyzer(a CLIRunner, tempDir string, triggerFilename string) error {
+	err := a.Run()
+	if err != nil {
+		return err
+	}
 
-		// read the generated report
-		generatedFile := path.Join(tempDir, "analysis_report.json")
-		reportContent, err := os.ReadFile(generatedFile)
-		if err != nil {
-			t.Fatal(err)
-		}
+	processedReport, err := a.Processor.Process(a.Stdout())
+	if err != nil {
+		return err
+	}
 
-		var report types.AnalysisReport
-		err = json.Unmarshal(reportContent, &report)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// save report
+	err = a.SaveReport(processedReport)
+	if err != nil {
+		return err
+	}
 
-		// do a verification check for the generated report
-		err = analysistest.Verify(report, "testdata/src/staticcheck/staticcheck.go")
-		if err != nil {
-			t.Fatal(err)
-		}
+	// read the generated report
+	generatedFile := path.Join(tempDir, "analysis_report.json")
+	reportContent, err := os.ReadFile(generatedFile)
+	if err != nil {
+		return err
+	}
 
-		// cleanup after test
-		err = os.Remove(generatedFile)
-		if err != nil {
-			t.Fatal(err)
-		}
+	var report types.AnalysisReport
+	err = json.Unmarshal(reportContent, &report)
+	if err != nil {
+		return err
+	}
 
-		// test TOML generation
+	// do a verification check for the generated report
+	err = analysistest.Verify(report, triggerFilename)
+	if err != nil {
+		return err
+	}
 
+	// cleanup after test
+	err = os.Remove(generatedFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func TestUtils(t *testing.T) {
+	t.Run("test TOML generation", func(t *testing.T) {
 		// fetch parsed issues
 		issues, err := utils.ParseIssues("testdata/issues.toml")
 		if err != nil {

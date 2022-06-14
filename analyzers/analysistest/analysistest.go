@@ -11,6 +11,7 @@ import (
 
 	"github.com/deepsourcelabs/deepsource-go/analyzers/types"
 	sitter "github.com/smacker/go-tree-sitter"
+	"github.com/smacker/go-tree-sitter/css"
 	"github.com/smacker/go-tree-sitter/golang"
 )
 
@@ -113,6 +114,8 @@ func getLanguage(filename string) (*sitter.Language, error) {
 	switch extension {
 	case ".go":
 		return golang.GetLanguage(), nil
+	case ".css":
+		return css.GetLanguage(), nil
 	default:
 		return nil, errors.New("language not supported")
 	}
