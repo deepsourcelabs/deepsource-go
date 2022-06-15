@@ -14,8 +14,29 @@ import (
 
 	"github.com/deepsourcelabs/deepsource-go/analyzers/types"
 	sitter "github.com/smacker/go-tree-sitter"
+	"github.com/smacker/go-tree-sitter/bash"
+	"github.com/smacker/go-tree-sitter/c"
+	"github.com/smacker/go-tree-sitter/cpp"
+	"github.com/smacker/go-tree-sitter/csharp"
 	"github.com/smacker/go-tree-sitter/css"
+	"github.com/smacker/go-tree-sitter/elm"
 	"github.com/smacker/go-tree-sitter/golang"
+	"github.com/smacker/go-tree-sitter/hcl"
+	"github.com/smacker/go-tree-sitter/html"
+	"github.com/smacker/go-tree-sitter/java"
+	"github.com/smacker/go-tree-sitter/javascript"
+	"github.com/smacker/go-tree-sitter/lua"
+	"github.com/smacker/go-tree-sitter/ocaml"
+	"github.com/smacker/go-tree-sitter/php"
+	"github.com/smacker/go-tree-sitter/protobuf"
+	"github.com/smacker/go-tree-sitter/python"
+	"github.com/smacker/go-tree-sitter/ruby"
+	"github.com/smacker/go-tree-sitter/rust"
+	"github.com/smacker/go-tree-sitter/scala"
+	"github.com/smacker/go-tree-sitter/svelte"
+	"github.com/smacker/go-tree-sitter/toml"
+	"github.com/smacker/go-tree-sitter/typescript/typescript"
+	"github.com/smacker/go-tree-sitter/yaml"
 )
 
 // ParsedIssue represents an issue parsed using tree-sitter.
@@ -174,10 +195,52 @@ func getLanguage(filename string) (*sitter.Language, error) {
 	extension := filepath.Ext(filename)
 
 	switch extension {
-	case ".go":
-		return golang.GetLanguage(), nil
+	case ".sh":
+		return bash.GetLanguage(), nil
+	case ".c":
+		return c.GetLanguage(), nil
+	case ".cpp":
+		return cpp.GetLanguage(), nil
+	case ".cs":
+		return csharp.GetLanguage(), nil
 	case ".css":
 		return css.GetLanguage(), nil
+	case ".elm":
+		return elm.GetLanguage(), nil
+	case ".go":
+		return golang.GetLanguage(), nil
+	case ".hcl":
+		return hcl.GetLanguage(), nil
+	case ".html":
+		return html.GetLanguage(), nil
+	case ".java":
+		return java.GetLanguage(), nil
+	case ".js":
+		return javascript.GetLanguage(), nil
+	case ".lua":
+		return lua.GetLanguage(), nil
+	case ".ml":
+		return ocaml.GetLanguage(), nil
+	case ".php":
+		return php.GetLanguage(), nil
+	case ".pb", ".proto":
+		return protobuf.GetLanguage(), nil
+	case ".py":
+		return python.GetLanguage(), nil
+	case ".rb":
+		return ruby.GetLanguage(), nil
+	case ".rs":
+		return rust.GetLanguage(), nil
+	case ".scala":
+		return scala.GetLanguage(), nil
+	case ".svelte":
+		return svelte.GetLanguage(), nil
+	case ".toml":
+		return toml.GetLanguage(), nil
+	case ".ts":
+		return typescript.GetLanguage(), nil
+	case ".yaml":
+		return yaml.GetLanguage(), nil
 	default:
 		return nil, errors.New("language not supported")
 	}
