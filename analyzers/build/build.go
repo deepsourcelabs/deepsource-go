@@ -68,10 +68,10 @@ func ParseIssues(filename string) ([]IssueMeta, error) {
 
 	for _, issueTOML := range issuesTOML.Issues {
 		is := IssueMeta{
-			IssueCode:   issueTOML["IssueCode"].(string),
-			Category:    issueTOML["Category"].(string),
-			Title:       issueTOML["Title"].(string),
-			Description: issueTOML["Description"].(string),
+			IssueCode:   issueTOML["issue_code"].(string),
+			Category:    issueTOML["category"].(string),
+			Title:       issueTOML["title"].(string),
+			Description: issueTOML["description"].(string),
 		}
 
 		issues = append(issues, is)

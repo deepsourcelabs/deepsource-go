@@ -40,7 +40,7 @@ func main() {
 		Name:      "staticcheck",
 		Command:   "staticcheck",
 		Args:      []string{"-f", "text", "./..."},
-		Processor: &processor, <=== will be implemented later
+		Processor: &processor, // <=== will be implemented later
 	}
 
 	err := a.Run()
@@ -194,11 +194,11 @@ For example, we have `issues.toml` as the file containing details for all issues
 ```toml
 [[issues]]
 
-IssueCode = "SA4017"
-Category = "bug-risk"
-Title = "Sprint is a pure function but its return value is ignored"
-Description = """
-## Sample
+issue_code = "SA4017"
+category = "bug-risk"
+title = "Sprint is a pure function but its return value is ignored"
+description = """
+Pure functions do not change the passed value but return a new value that is meant to be used. This issue is raised when values returned by pure functions are discarded.
 """
 ```
 
@@ -223,8 +223,8 @@ The TOML files are generated at `$REPO_ROOT/.deepsource/analyzers/issues/<IssueC
 On inspecting `$REPO_ROOT/.deepsource/analyzers/issues/SA4017.toml`, we can see the following contents:
 
 ```toml
-IssueCode = "SA4017"
-Category = "bug-risk"
-Title = "Sprint is a pure function but its return value is ignored"
-Description = "<h2>Sample</h2>\n"
+issue_code = "SA4017"
+category = "bug-risk"
+title = "Sprint is a pure function but its return value is ignored"
+description = "Pure functions do not change the passed value but return a new value that is meant to be used. This issue is raised when values returned by pure functions are discarded."
 ```
