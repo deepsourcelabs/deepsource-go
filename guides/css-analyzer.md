@@ -18,16 +18,16 @@ We will be using csslint's `--format=compact` for getting results. Since the com
 /home/testdir/file1.css: line 5, col 6, Error - Expected RBRACE at line 5, col 6. (errors)
 ```
 
-In order to fulfill our requirements, let's make use of the `IssueCodeProcessor` provided by `RegexProcessor`.
+In order to fulfill our requirements, let's make use of the `IssueCodeGenerator` provided by `RegexProcessor`.
 
-`IssueCodeProcessor` is used when an analyzer doesn't support issue codes. It takes the content of the `issue_code` named group (from `Pattern`) and returns the issue code.
+`IssueCodeGenerator` is used when an analyzer doesn't support issue codes. It takes the content of the `issue_code` named group (from `Pattern`) and returns the issue code.
 
 > **Note**:
 >
-> If `IssueCodeProcessor` is not implemented, it fallbacks to using the content as the issue code.
+> If `IssueCodeGenerator` is not implemented, it fallbacks to using the content as the issue code.
 
 ```go
-func issueProcessor(content string) string {
+func issueCodeGenerator(content string) string {
 	issueMap := map[string]string{
 		"empty-rules":      "E001",
 		"errors":           "E002",
@@ -58,7 +58,7 @@ import (
 func main() {
 	rp := processors.RegexProcessor{
 		Pattern:            `(?P<filename>.+): line (?P<line>\d+), col (?P<column>\d+), (?P<message>.+) \((?P<issue_code>.+)\)`,
-		IssueCodeProcessor: issueProcessor,
+		IssueCodeGenerator: issueCodeGenerator,
 	}
 
 	a := analyzers.CLIRunner{
@@ -84,7 +84,7 @@ func main() {
 	}
 }
 
-func issueProcessor(content string) string {
+func issueCodeGenerator(content string) string {
 	issueMap := map[string]string{
 		"empty-rules":      "E001",
 		"errors":           "E002",

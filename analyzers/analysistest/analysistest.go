@@ -2,8 +2,11 @@ package analysistest
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -21,71 +24,130 @@ type ParsedIssue struct {
 	Line      int
 }
 
-// Verify compares the generated report and parsed issues using tree-sitter.
-func Verify(report types.AnalysisReport, filename string) error {
-	parser := sitter.NewParser()
-
-	// get language
-	lang, err := getLanguage(filename)
-	if err != nil {
-		return err
-	}
-	parser.SetLanguage(lang)
-
-	// read report
-	content, err := os.ReadFile(filename)
+func Run(directory string) error {
+	// read the generated report from TOOLBOX_PATH
+	toolboxPath := os.Getenv("TOOLBOX_PATH")
+	generatedFile := path.Join(toolboxPath, "analysis_report.json")
+	reportContent, err := os.ReadFile(generatedFile)
 	if err != nil {
 		return err
 	}
 
-	// generate tree
-	ctx := context.Background()
-	tree, err := parser.ParseCtx(ctx, nil, content)
+	var report types.AnalysisReport
+	err = json.Unmarshal(reportContent, &report)
 	if err != nil {
 		return err
 	}
 
-	// create a query for fetching comments
-	queryStr := "(comment) @comment"
-	query, err := sitter.NewQuery([]byte(queryStr), lang)
+	// do a verification check for the generated report
+	err = verifyReport(report, directory)
 	if err != nil {
 		return err
 	}
 
-	// execute query on root node
-	qc := sitter.NewQueryCursor()
-	n := tree.RootNode()
-	qc.Exec(query, n)
-	defer qc.Close()
+	// cleanup after test
+	err = os.Remove(generatedFile)
+	if err != nil {
+		return err
+	}
 
-	var parsedIssues []ParsedIssue
+	return nil
+}
 
-	// iterate over matches
-	for {
-		m, ok := qc.NextMatch()
-		if !ok {
-			break
+// getFilenames returns the filenames for a directory.
+func getFilenames(directory string) ([]string, error) {
+	var files []string
+	filepath.Walk(directory, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
 
-		for _, c := range m.Captures {
-			// get node content
-			node := c.Node
-			nodeContent := node.Content(content)
+		// if not a directory, append to files
+		if !info.IsDir() {
+			filename := filepath.Join(directory, info.Name())
+			files = append(files, filename)
+		}
 
-			// check if the comment contains raise annotation
-			if strings.Contains(nodeContent, "raise") {
-				// find match using expression
-				exp := regexp.MustCompile(`.+ raise: `)
-				submatches := exp.FindStringSubmatch(nodeContent)
+		return nil
+	})
 
-				if len(submatches) != 0 {
-					substrings := exp.Split(nodeContent, -1)
-					if len(substrings) > 1 {
-						issueCodes := strings.Split(substrings[1], ",")
-						// add issue to parsedIssues
-						for _, issueCode := range issueCodes {
-							parsedIssue := ParsedIssue{IssueCode: strings.TrimSpace(issueCode), Line: int(node.StartPoint().Row) + 1}
-							parsedIssues = append(parsedIssues, parsedIssue)
+	return files, nil
+}
+
+// Verify compares the generated report and parsed issues using tree-sitter.
+func verifyReport(report types.AnalysisReport, directory string) error {
+	var parsedIssues []ParsedIssue
+
+	// get filenames
+	files, err := getFilenames(directory)
+	if err != nil {
+		return err
+	}
+
+	parser := sitter.NewParser()
+
+	// walk through each file and get issues
+	for _, filename := range files {
+		// get language
+		lang, err := getLanguage(filename)
+		if err != nil {
+			return err
+		}
+		parser.SetLanguage(lang)
+
+		// read report
+		content, err := os.ReadFile(filename)
+		if err != nil {
+			return err
+		}
+
+		// generate tree
+		ctx := context.Background()
+		tree, err := parser.ParseCtx(ctx, nil, content)
+		if err != nil {
+			return err
+		}
+
+		// create a query for fetching comments
+		queryStr := "(comment) @comment"
+		query, err := sitter.NewQuery([]byte(queryStr), lang)
+		if err != nil {
+			return err
+		}
+
+		// execute query on root node
+		qc := sitter.NewQueryCursor()
+		n := tree.RootNode()
+		qc.Exec(query, n)
+		defer qc.Close()
+
+		// iterate over matches
+		for {
+			m, ok := qc.NextMatch()
+			if !ok {
+				break
+			}
+
+			for _, c := range m.Captures {
+				// get node content
+				node := c.Node
+				nodeContent := node.Content(content)
+
+				// check if the comment contains raise annotation
+				if strings.Contains(nodeContent, "raise") {
+					// find match using expression
+					exp := regexp.MustCompile(`.+ raise: `)
+					submatches := exp.FindStringSubmatch(nodeContent)
+
+					if len(submatches) != 0 {
+						substrings := exp.Split(nodeContent, -1)
+						if len(substrings) > 1 {
+							issueCodes := strings.Split(substrings[1], ",")
+							// add issue to parsedIssues
+							for _, issueCode := range issueCodes {
+								parsedIssue := ParsedIssue{IssueCode: strings.TrimSpace(issueCode), Line: int(node.StartPoint().Row) + 1}
+								parsedIssues = append(parsedIssues, parsedIssue)
+							}
 						}
 					}
 				}

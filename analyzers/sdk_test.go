@@ -1,7 +1,6 @@
 package analyzers
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
 	"path"
@@ -10,9 +9,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/analysistest"
+	"github.com/deepsourcelabs/deepsource-go/analyzers/build"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/processors"
-	"github.com/deepsourcelabs/deepsource-go/analyzers/types"
-	"github.com/deepsourcelabs/deepsource-go/analyzers/utils"
 )
 
 func TestAnalyzer(t *testing.T) {
@@ -33,7 +31,22 @@ func TestAnalyzer(t *testing.T) {
 			Processor: &rp,
 		}
 
-		err := testRunner(a, tempDir, "testdata/src/staticcheck/staticcheck.go")
+		err := a.Run()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		report, err := a.Processor.Process(a.Stdout())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = a.SaveReport(report)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = analysistest.Run("./testdata/src/staticcheck")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -45,7 +58,7 @@ func TestAnalyzer(t *testing.T) {
 		t.Setenv("TOOLBOX_PATH", tempDir)
 		t.Setenv("REPO_ROOT", tempDir)
 
-		issueProcessor := func(content string) string {
+		issueCodeGenerator := func(content string) string {
 			issueMap := map[string]string{
 				"empty-rules":      "E001",
 				"errors":           "E002",
@@ -61,7 +74,7 @@ func TestAnalyzer(t *testing.T) {
 
 		rp := processors.RegexProcessor{
 			Pattern:            `(?P<filename>.+): line (?P<line>\d+), col (?P<column>\d+), (?P<message>.+) \((?P<issue_code>.+)\)`,
-			IssueCodeProcessor: issueProcessor,
+			IssueCodeGenerator: issueCodeGenerator,
 		}
 
 		a := &CLIRunner{
@@ -71,68 +84,38 @@ func TestAnalyzer(t *testing.T) {
 			Processor: &rp,
 		}
 
-		err := testRunner(a, tempDir, "testdata/src/csslint/csslint.css")
+		err := a.Run()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		report, err := a.Processor.Process(a.Stdout())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = a.SaveReport(report)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = analysistest.Run("./testdata/src/csslint")
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
 }
 
-func testRunner(a *CLIRunner, tempDir string, triggerFilename string) error {
-	err := a.Run()
-	if err != nil {
-		return err
-	}
-
-	processedReport, err := a.Processor.Process(a.Stdout())
-	if err != nil {
-		return err
-	}
-
-	// save report
-	err = a.SaveReport(processedReport)
-	if err != nil {
-		return err
-	}
-
-	// read the generated report
-	generatedFile := path.Join(tempDir, "analysis_report.json")
-	reportContent, err := os.ReadFile(generatedFile)
-	if err != nil {
-		return err
-	}
-
-	var report types.AnalysisReport
-	err = json.Unmarshal(reportContent, &report)
-	if err != nil {
-		return err
-	}
-
-	// do a verification check for the generated report
-	err = analysistest.Verify(report, triggerFilename)
-	if err != nil {
-		return err
-	}
-
-	// cleanup after test
-	err = os.Remove(generatedFile)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func TestUtils(t *testing.T) {
 	t.Run("test TOML generation", func(t *testing.T) {
 		// fetch parsed issues
-		issues, err := utils.ParseIssues("testdata/issues.toml")
+		issues, err := build.ParseIssues("testdata/issues.toml")
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// generate TOML files
-		err = utils.BuildTOML(issues, "testdata/toml")
+		err = build.BuildTOML(issues, "testdata/toml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -144,8 +127,8 @@ func TestUtils(t *testing.T) {
 		}
 
 		// parse issues from each TOML file
-		var parsedIssue utils.IssueMeta
-		var parsedIssues []utils.IssueMeta
+		var parsedIssue build.IssueMeta
+		var parsedIssues []build.IssueMeta
 
 		for _, f := range files {
 			filePath := path.Join("testdata/toml", f.Name())

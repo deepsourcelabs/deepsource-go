@@ -1,4 +1,4 @@
-package utils
+package build
 
 import (
 	"bytes"
@@ -78,7 +78,7 @@ func ParseIssues(filename string) ([]IssueMeta, error) {
 	}
 
 	for _, issue := range issues {
-		// parse markdown content
+		// parse and sanitize markdown content
 		desc, err := readMarkdown(issue.Description)
 		if err != nil {
 			return nil, err
@@ -96,7 +96,7 @@ func ParseIssues(filename string) ([]IssueMeta, error) {
 	return parsedIssues, nil
 }
 
-// readMarkdown is a helper utility used for parsing markdown content.
+// readMarkdown is a helper utility used for parsing and sanitizing markdown content.
 func readMarkdown(content string) (string, error) {
 	// use the Github-flavored Markdown extension
 	md := goldmark.New(

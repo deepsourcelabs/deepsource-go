@@ -29,8 +29,8 @@ The Go SDK makes it easier for developers to integrate an existing analyzer with
 Here are some extensive guides on working with the SDK:
 
 - [Writing custom analyzers](guides/writing-analyzers.md)
+- [Testing Analyzers](guides/testing-analyzers.md)
 - [Writing a CSS Analyzer](guides/css-analyzer.md)
-
 ## Community
 
 Interested in DeepSource and want to chat with the community? Feel free to join our [Discord server](http://deepsource.io/discord).
