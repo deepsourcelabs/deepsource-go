@@ -194,9 +194,9 @@ For example, we have `issues.toml` as the file containing details for all issues
 ```toml
 [[issues]]
 
-Code = "SA4017"
-Text = "Sprint is a pure function but its return value is ignored"
-ShortDescription = "Sprint is a pure function but its return value is ignored"
+IssueCode = "SA4017"
+Category = "bug-risk"
+Title = "Sprint is a pure function but its return value is ignored"
 Description = """
 ## Sample
 """
@@ -223,8 +223,8 @@ The TOML files are generated at `$REPO_ROOT/.deepsource/analyzers/issues/<IssueC
 On inspecting `$REPO_ROOT/.deepsource/analyzers/issues/SA4017.toml`, we can see the following contents:
 
 ```toml
-Code = "SA4017"
-Text = "Sprint is a pure function but its return value is ignored"
-ShortDescription = "Sprint is a pure function but its return value is ignored"
+IssueCode = "SA4017"
+Category = "bug-risk"
+Title = "Sprint is a pure function but its return value is ignored"
 Description = "<h2>Sample</h2>\n"
 ```
