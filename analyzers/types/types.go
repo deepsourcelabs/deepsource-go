@@ -1,30 +1,21 @@
 package types
 
-type Coordinate struct {
-	Line   int `json:"line"`
-	Column int `json:"column"`
-}
-
-type Position struct {
-	Begin Coordinate `json:"begin"`
-	End   Coordinate `json:"end"`
-}
-
-type Location struct {
-	Path     string   `json:"path"`
-	Position Position `json:"position"`
-}
-
 type Issue struct {
-	IssueCode string   `json:"issue_code"`
-	IssueText string   `json:"issue_text"`
-	Location  Location `json:"location"`
-}
-
-// Location of an issue
-type IssueLocation struct {
-	Path     string   `json:"path"`
-	Position Position `json:"position"`
+	IssueCode string `json:"issue_code"`
+	IssueText string `json:"issue_text"`
+	Location  struct {
+		Path     string `json:"path"`
+		Position struct {
+			Begin struct {
+				Line   int `json:"line"`
+				Column int `json:"column"`
+			} `json:"begin"`
+			End struct {
+				Line   int `json:"line"`
+				Column int `json:"column"`
+			} `json:"end"`
+		} `json:"position"`
+	} `json:"location"`
 }
 
 type AnalysisError struct {

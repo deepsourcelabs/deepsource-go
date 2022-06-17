@@ -45,6 +45,8 @@ type ParsedIssue struct {
 	Line      int
 }
 
+type ParsedIssues []ParsedIssue
+
 func Run(directory string) error {
 	// read the generated report from TOOLBOX_PATH
 	toolboxPath := os.Getenv("TOOLBOX_PATH")
@@ -97,7 +99,7 @@ func getFilenames(directory string) ([]string, error) {
 
 // Verify compares the generated report and parsed issues using tree-sitter.
 func verifyReport(report types.AnalysisReport, directory string) error {
-	var parsedIssues []ParsedIssue
+	var parsedIssues ParsedIssues
 
 	// get filenames
 	files, err := getFilenames(directory)
@@ -247,7 +249,7 @@ func getLanguage(filename string) (*sitter.Language, error) {
 }
 
 // compareReport is a helper which checks if the parsed issues are identical to the issues present in the report.
-func compareReport(parsedIssues []ParsedIssue, report types.AnalysisReport) bool {
+func compareReport(parsedIssues ParsedIssues, report types.AnalysisReport) bool {
 	// sort report and parsedIssues by line number
 	sort.Slice(parsedIssues, func(i, j int) bool {
 		return parsedIssues[i].Line < parsedIssues[j].Line

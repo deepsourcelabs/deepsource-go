@@ -1,16 +1,15 @@
 package analyzers
 
 import (
-	"errors"
 	"os"
 	"path"
-	"reflect"
 	"testing"
 
 	"github.com/BurntSushi/toml"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/analysistest"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/build"
 	"github.com/deepsourcelabs/deepsource-go/analyzers/processors"
+	"github.com/go-test/deep"
 )
 
 func TestAnalyzer(t *testing.T) {
@@ -108,30 +107,36 @@ func TestAnalyzer(t *testing.T) {
 
 func TestUtils(t *testing.T) {
 	t.Run("test TOML generation", func(t *testing.T) {
+		rootDir := t.TempDir()
 		// fetch parsed issues
-		issues, err := build.ParseIssues("testdata/issues.toml")
+		f, err := os.Open("testdata/issues.toml")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		issues, err := build.FetchIssues(f)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// generate TOML files
-		err = build.BuildTOML(issues, "testdata/toml")
+		err = build.BuildTOML(issues, rootDir)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// traverse directory
-		files, err := os.ReadDir("testdata/toml")
+		files, err := os.ReadDir(rootDir)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// parse issues from each TOML file
 		var parsedIssue build.IssueMeta
-		var parsedIssues []build.IssueMeta
+		var parsedIssues build.IssuesMeta
 
 		for _, f := range files {
-			filePath := path.Join("testdata/toml", f.Name())
+			filePath := path.Join(rootDir, f.Name())
 			_, err = toml.DecodeFile(filePath, &parsedIssue)
 			if err != nil {
 				t.Fatal(err)
@@ -140,8 +145,8 @@ func TestUtils(t *testing.T) {
 		}
 
 		// check if the parsed issues and the issues present in the parent TOML are equal
-		if !reflect.DeepEqual(issues, parsedIssues) {
-			t.Fatal(errors.New("mismatch between issues in parent TOML file and parsed issues"))
+		if diff := deep.Equal(issues, parsedIssues); diff != nil {
+			t.Errorf("mismatch between parsed issues and report's issues: %s\n", diff)
 		}
 
 		// cleanup TOMLs

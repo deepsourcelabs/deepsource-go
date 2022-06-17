@@ -32,49 +32,9 @@ func (r *RegexProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, error)
 			break
 		}
 
-		exp, err := regexp.Compile(r.Pattern)
+		issue, err := populateIssue(line, r.Pattern, r.IssueCodeGenerator)
 		if err != nil {
 			return types.AnalysisReport{}, err
-		}
-
-		// get groups
-		groupNames := exp.SubexpNames()
-
-		var issue types.Issue
-		groups := exp.FindAllStringSubmatch(strings.TrimSuffix(line, "\n"), -1)
-		for groupIdx, content := range groups[0] {
-			groupName := groupNames[groupIdx]
-
-			// populate issue using named groups
-			switch groupName {
-			case "filename":
-				issue.Location.Path = content
-			case "line":
-				line, err := strconv.Atoi(content)
-				if err != nil {
-					return types.AnalysisReport{}, err
-				}
-				issue.Location.Position.Begin.Line = line
-			case "column":
-				col, err := strconv.Atoi(content)
-				if err != nil {
-					return types.AnalysisReport{}, err
-				}
-				issue.Location.Position.Begin.Column = col
-			case "message":
-				issue.IssueText = content
-			case "issue_code":
-				if r.IssueCodeGenerator == nil {
-					issue.IssueCode = content
-				} else {
-					issue.IssueCode = r.IssueCodeGenerator(content)
-				}
-			default:
-				continue
-			}
-		}
-		if len(groups) == 0 {
-			return types.AnalysisReport{}, errors.New("failed to parse message")
 		}
 
 		issues = append(issues, issue)
@@ -87,4 +47,56 @@ func (r *RegexProcessor) Process(buf bytes.Buffer) (types.AnalysisReport, error)
 
 	// return report
 	return report, nil
+}
+
+// populateIssue returns an issue with the help of a regular expression based pattern and an issue code generator.
+func populateIssue(line string, pattern string, issueCodeGenerator IssueCodeGenerator) (types.Issue, error) {
+	// compile regular expression
+	exp, err := regexp.Compile(pattern)
+	if err != nil {
+		return types.Issue{}, err
+	}
+
+	// get groups
+	groupNames := exp.SubexpNames()
+
+	var issue types.Issue
+	groups := exp.FindAllStringSubmatch(strings.TrimSuffix(line, "\n"), -1)
+	if len(groups) == 0 {
+		return types.Issue{}, errors.New("failed to parse message")
+	}
+
+	for groupIdx, content := range groups[0] {
+		groupName := groupNames[groupIdx]
+
+		// populate issue using named groups
+		switch groupName {
+		case "filename":
+			issue.Location.Path = content
+		case "line":
+			line, err := strconv.Atoi(content)
+			if err != nil {
+				return types.Issue{}, err
+			}
+			issue.Location.Position.Begin.Line = line
+		case "column":
+			col, err := strconv.Atoi(content)
+			if err != nil {
+				return types.Issue{}, err
+			}
+			issue.Location.Position.Begin.Column = col
+		case "message":
+			issue.IssueText = content
+		case "issue_code":
+			if issueCodeGenerator == nil {
+				issue.IssueCode = content
+			} else {
+				issue.IssueCode = issueCodeGenerator(content)
+			}
+		default:
+			continue
+		}
+	}
+
+	return issue, nil
 }

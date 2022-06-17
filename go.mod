@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/BurntSushi/toml v1.1.0
+	github.com/go-test/deep v1.0.8
 	github.com/microcosm-cc/bluemonday v1.0.18
 	github.com/smacker/go-tree-sitter v0.0.0-20220421092837-ec55f7cfeaf4
 	github.com/yuin/goldmark v1.4.12
