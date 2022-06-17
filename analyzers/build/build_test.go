@@ -37,19 +37,19 @@ func TestReadTOML(t *testing.T) {
 	tomlNormal := `
 [[issues]]
 
-IssueCode = "SA4017"
-Category = "bug-risk"
-Title = "Sprint is a pure function but its return value is ignored"
-Description = """
+issue_code = "SA4017"
+category = "bug-risk"
+title = "Sprint is a pure function but its return value is ignored"
+description = """
 ## Description
 """
 
 [[issues]]
 
-IssueCode = "S1039"
-Category = "style"
-Title = "unnecessary use of fmt.Sprint"
-Description = """
+issue_code = "S1039"
+category = "style"
+title = "unnecessary use of fmt.Sprint"
+description = """
 # Example
 """
 `
@@ -76,9 +76,9 @@ Description = """
 	tomlMissingDescription := `
 [[issues]]
 
-IssueCode = "SA4017"
-Category = "bug-risk"
-Title = "Sprint is a pure function but its return value is ignored"
+issue_code = "SA4017"
+category = "bug-risk"
+title = "Sprint is a pure function but its return value is ignored"
 `
 
 	expectedTOMLMissingDescription := IssuesMeta{

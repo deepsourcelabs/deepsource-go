@@ -132,20 +132,20 @@ func readTOML(r io.Reader) (IssuesMeta, error) {
 		description := ""
 
 		// handle interface conversions
-		if issueTOML["IssueCode"] != nil {
-			issueCode = issueTOML["IssueCode"].(string)
+		if issueTOML["issue_code"] != nil {
+			issueCode = issueTOML["issue_code"].(string)
 		}
 
-		if issueTOML["Category"] != nil {
-			category = issueTOML["Category"].(string)
+		if issueTOML["category"] != nil {
+			category = issueTOML["category"].(string)
 		}
 
-		if issueTOML["Title"] != nil {
-			title = issueTOML["Title"].(string)
+		if issueTOML["title"] != nil {
+			title = issueTOML["title"].(string)
 		}
 
-		if issueTOML["Description"] != nil {
-			description = issueTOML["Description"].(string)
+		if issueTOML["description"] != nil {
+			description = issueTOML["description"].(string)
 		}
 
 		is := IssueMeta{
