@@ -47,6 +47,8 @@ type ParsedIssue struct {
 
 type ParsedIssues []ParsedIssue
 
+const queryStr = "(comment) @comment"
+
 func Run(directory string) error {
 	// read the generated report from TOOLBOX_PATH
 	toolboxPath := os.Getenv("TOOLBOX_PATH")
@@ -80,7 +82,7 @@ func Run(directory string) error {
 // getFilenames returns the filenames for a directory.
 func getFilenames(directory string) ([]string, error) {
 	var files []string
-	filepath.Walk(directory, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.Walk(directory, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -93,6 +95,9 @@ func getFilenames(directory string) ([]string, error) {
 
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return files, nil
 }
@@ -111,20 +116,20 @@ func verifyReport(report types.AnalysisReport, directory string) error {
 
 	// walk through each file and get issues
 	for _, filename := range files {
-		// get language
+		// set language for the parser
 		lang, err := getLanguage(filename)
 		if err != nil {
 			return err
 		}
 		parser.SetLanguage(lang)
 
-		// read report
+		// read the report
 		content, err := os.ReadFile(filename)
 		if err != nil {
 			return err
 		}
 
-		// generate tree
+		// generate the tree using tree-sitter
 		ctx := context.Background()
 		tree, err := parser.ParseCtx(ctx, nil, content)
 		if err != nil {
@@ -132,7 +137,6 @@ func verifyReport(report types.AnalysisReport, directory string) error {
 		}
 
 		// create a query for fetching comments
-		queryStr := "(comment) @comment"
 		query, err := sitter.NewQuery([]byte(queryStr), lang)
 		if err != nil {
 			return err
@@ -140,17 +144,28 @@ func verifyReport(report types.AnalysisReport, directory string) error {
 
 		// execute query on root node
 		qc := sitter.NewQueryCursor()
+		defer qc.Close()
 		n := tree.RootNode()
 		qc.Exec(query, n)
-		defer qc.Close()
 
 		// iterate over matches
 		for {
+			// fetch a match
 			m, ok := qc.NextMatch()
 			if !ok {
 				break
 			}
 
+			// We iterate over the query captures for each match. This traversal consists of various steps:
+			// 1. get the node content
+			// 2. check if the node has a "raise" annotation
+			//	2.1 if true, the node's content is matched with a regular expression. the regular expression matches comments having a raise annotation.
+			// 	2.2 the submatches are fetched using the regular expression.
+			// 	2.3 if there exists some submatches, then:
+			//		2.3.1 split the node content into substrings
+			//		2.3.2 check if there exists at least 2 substrings. a valid annotation contains at least 2 substrings: "raise" and issue codes separated by a delimiter (,)
+			//		2.3.3 if true, the issue codes are separated on the basis of the delimiter (,)
+			//		2.3.4 the issue is then populated with the issue code and line numbers
 			for _, c := range m.Captures {
 				// get node content
 				node := c.Node
@@ -158,14 +173,21 @@ func verifyReport(report types.AnalysisReport, directory string) error {
 
 				// check if the comment contains raise annotation
 				if strings.Contains(nodeContent, "raise") {
+
 					// find match using expression
 					exp := regexp.MustCompile(`.+ raise: `)
 					submatches := exp.FindStringSubmatch(nodeContent)
 
 					if len(submatches) != 0 {
+						// get substrings
 						substrings := exp.Split(nodeContent, -1)
+
+						// the annotation must have at least 2 substrings: "raise" and issue codes separated by a delimiter (,)
 						if len(substrings) > 1 {
+
+							// fetch issue codes by splitting on the basis of the delimiter
 							issueCodes := strings.Split(substrings[1], ",")
+
 							// add issue to parsedIssues
 							for _, issueCode := range issueCodes {
 								parsedIssue := ParsedIssue{IssueCode: strings.TrimSpace(issueCode), Line: int(node.StartPoint().Row) + 1}

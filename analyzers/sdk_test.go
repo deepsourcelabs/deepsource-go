@@ -120,7 +120,7 @@ func TestUtils(t *testing.T) {
 		}
 
 		// generate TOML files
-		err = build.BuildTOML(issues, rootDir)
+		err = issues.BuildTOML(rootDir)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -133,7 +133,7 @@ func TestUtils(t *testing.T) {
 
 		// parse issues from each TOML file
 		var parsedIssue build.IssueMeta
-		var parsedIssues build.IssuesMeta
+		var parsedIssues build.IssueMetas
 
 		for _, f := range files {
 			filePath := path.Join(rootDir, f.Name())
@@ -141,7 +141,7 @@ func TestUtils(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			parsedIssues = append(parsedIssues, parsedIssue)
+			parsedIssues.Issues = append(parsedIssues.Issues, parsedIssue)
 		}
 
 		// check if the parsed issues and the issues present in the parent TOML are equal

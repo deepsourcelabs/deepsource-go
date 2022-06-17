@@ -54,7 +54,7 @@ description = """
 """
 `
 
-	expectedTOMLNormal := IssuesMeta{
+	expectedTOMLNormal := []IssueMeta{
 		{
 			IssueCode:   "SA4017",
 			Category:    "bug-risk",
@@ -71,7 +71,7 @@ description = """
 
 	tomlBlank := ``
 
-	var expectedTOMLBlank IssuesMeta
+	var expectedTOMLBlank []IssueMeta
 
 	tomlMissingDescription := `
 [[issues]]
@@ -81,7 +81,7 @@ category = "bug-risk"
 title = "Sprint is a pure function but its return value is ignored"
 `
 
-	expectedTOMLMissingDescription := IssuesMeta{
+	expectedTOMLMissingDescription := []IssueMeta{
 		{
 			IssueCode: "SA4017",
 			Category:  "bug-risk",
@@ -92,7 +92,7 @@ title = "Sprint is a pure function but its return value is ignored"
 	cases := []struct {
 		description string
 		tomlContent string
-		expected    IssuesMeta
+		expected    []IssueMeta
 	}{
 		{"normal TOML content with issues", tomlNormal, expectedTOMLNormal},
 		{"blank TOML", tomlBlank, expectedTOMLBlank},
@@ -101,12 +101,13 @@ title = "Sprint is a pure function but its return value is ignored"
 
 	for _, tc := range cases {
 		r := strings.NewReader(tc.tomlContent)
-		actual, err := readTOML(r)
+		var issue IssueTOML
+		err := issue.Read(r)
 		if err != nil {
 			t.Error(err)
 		}
 
-		if diff := deep.Equal(actual, tc.expected); diff != nil {
+		if diff := deep.Equal(issue.IssueMetas().Issues, tc.expected); diff != nil {
 			t.Errorf("description: %s, %s", tc.description, diff)
 		}
 	}
@@ -147,7 +148,7 @@ description = ""` + "\n"
 	}
 
 	for _, tc := range cases {
-		err := writeTOML(&tc.writer, tc.issue)
+		err := tc.issue.Write(&tc.writer)
 		if err != nil {
 			t.Error(err)
 		}
@@ -165,8 +166,8 @@ description = ""` + "\n"
 func TestParseIssues(t *testing.T) {
 	cases := []struct {
 		description string
-		issues      IssuesMeta
-		expected    IssuesMeta
+		issues      []IssueMeta
+		expected    []IssueMeta
 	}{
 		{"must parse markdown", []IssueMeta{
 			{
@@ -201,12 +202,14 @@ func TestParseIssues(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		actual, err := parseIssues(tc.issues)
+		var issueMetas IssueMetas
+		issueMetas.Issues = tc.issues
+		actual, err := parseIssues(issueMetas)
 		if err != nil {
 			t.Error(err)
 		}
 
-		if diff := deep.Equal(actual, tc.expected); diff != nil {
+		if diff := deep.Equal(actual.Issues, tc.expected); diff != nil {
 			t.Errorf("description: %s, %s", tc.description, diff)
 		}
 	}

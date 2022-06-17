@@ -23,7 +23,9 @@ type IssueMeta struct {
 	Description string `toml:"description"`
 }
 
-type IssuesMeta []IssueMeta
+type IssueMetas struct {
+	Issues []IssueMeta
+}
 
 // IssueTOML is used for decoding issues from a TOML file.
 type IssueTOML struct {
@@ -49,7 +51,7 @@ func GenerateTOML() error {
 
 	// generate TOML files
 	rootDir := path.Join(repoRoot, ".deepsource/analyzers/issues")
-	err = BuildTOML(issues, rootDir)
+	err = issues.BuildTOML(rootDir)
 	if err != nil {
 		return err
 	}
@@ -57,33 +59,37 @@ func GenerateTOML() error {
 	return nil
 }
 
-// FetchIssues reads a TOML file containing all issues, and returns all issues as IssuesMeta.
-func FetchIssues(r io.Reader) (IssuesMeta, error) {
-	issues, err := readTOML(r)
+// FetchIssues reads a TOML file containing all issues, and returns all issues as IssueMetas.
+func FetchIssues(r io.Reader) (IssueMetas, error) {
+	// get issues from TOML file
+	var issueTOML IssueTOML
+	err := issueTOML.Read(r)
 	if err != nil {
-		return nil, err
+		return IssueMetas{}, err
 	}
+	issues := issueTOML.IssueMetas()
 
+	// parse issues
 	parsedIssues, err := parseIssues(issues)
 	if err != nil {
-		return nil, err
+		return IssueMetas{}, err
 	}
 
 	// sort issues (based on issue code) before returning
-	sort.Slice(parsedIssues, func(i, j int) bool {
-		return parsedIssues[i].IssueCode < parsedIssues[j].IssueCode
+	sort.Slice(parsedIssues.Issues, func(i, j int) bool {
+		return parsedIssues.Issues[i].IssueCode < parsedIssues.Issues[j].IssueCode
 	})
 
 	return parsedIssues, nil
 }
 
 // BuildTOML uses issues to generate TOML files to a directory.
-func BuildTOML(issues IssuesMeta, rootDir string) error {
-	if len(issues) == 0 {
+func (i *IssueMetas) BuildTOML(rootDir string) error {
+	if len(i.Issues) == 0 {
 		return errors.New("no issues found")
 	}
 
-	for _, issue := range issues {
+	for _, issue := range i.Issues {
 		// The unique identifier (filename) is based on the issue code. TOML files cannot be generated for issues having an invalid/empty code.
 		if issue.IssueCode == "" {
 			return errors.New("invalid issue code. cannot generate toml")
@@ -99,7 +105,7 @@ func BuildTOML(issues IssuesMeta, rootDir string) error {
 		}
 
 		// write to file
-		err = writeTOML(f, issue)
+		err = issue.Write(f)
 		if err != nil {
 			return err
 		}
@@ -108,62 +114,64 @@ func BuildTOML(issues IssuesMeta, rootDir string) error {
 	return nil
 }
 
-// readTOML reads content from a reader and returns issues.
-func readTOML(r io.Reader) (IssuesMeta, error) {
+// Read reads content from a reader and unmarshals it to IssueTOML.
+func (i *IssueTOML) Read(r io.Reader) error {
 	// read content from reader
 	content, err := io.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// unmarshal TOML
-	var issuesTOML IssueTOML
-	err = toml.Unmarshal(content, &issuesTOML)
+	err = toml.Unmarshal(content, &i)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// generate issues
-	var issues IssuesMeta
-	for _, issueTOML := range issuesTOML.Issues {
+	return nil
+}
+
+// IssueMetas returns issues from a IssueTOML struct.
+func (i *IssueTOML) IssueMetas() IssueMetas {
+	var issueMetas IssueMetas
+	for _, issueTOML := range i.Issues {
 		issueCode := ""
 		category := ""
 		title := ""
 		description := ""
 
-		// handle interface conversions
 		if issueTOML["issue_code"] != nil {
-			issueCode = issueTOML["issue_code"].(string)
+			issueCode = fmt.Sprintf("%v", issueTOML["issue_code"])
 		}
 
 		if issueTOML["category"] != nil {
-			category = issueTOML["category"].(string)
+			category = fmt.Sprintf("%v", issueTOML["category"])
 		}
 
 		if issueTOML["title"] != nil {
-			title = issueTOML["title"].(string)
+			title = fmt.Sprintf("%v", issueTOML["title"])
 		}
 
 		if issueTOML["description"] != nil {
-			description = issueTOML["description"].(string)
+			description = fmt.Sprintf("%v", issueTOML["description"])
 		}
 
-		is := IssueMeta{
+		issueMeta := IssueMeta{
 			IssueCode:   issueCode,
 			Category:    category,
 			Title:       title,
 			Description: description,
 		}
 
-		issues = append(issues, is)
+		issueMetas.Issues = append(issueMetas.Issues, issueMeta)
 	}
 
-	return issues, nil
+	return issueMetas
 }
 
-// writeTOML writes issue data to the writer.
-func writeTOML(w io.Writer, issue IssueMeta) error {
-	if err := toml.NewEncoder(w).Encode(issue); err != nil {
+// Write writes the issue data to the writer.
+func (i *IssueMeta) Write(w io.Writer) error {
+	if err := toml.NewEncoder(w).Encode(i); err != nil {
 		return err
 	}
 
@@ -191,18 +199,18 @@ func readMarkdown(content string) (string, error) {
 }
 
 // parseIssues returns issues after parsing and sanitizing markdown content.
-func parseIssues(issues IssuesMeta) (IssuesMeta, error) {
-	var parsedIssues IssuesMeta
+func parseIssues(issues IssueMetas) (IssueMetas, error) {
+	var parsedIssues IssueMetas
 
-	for _, issue := range issues {
+	for _, issue := range issues.Issues {
 		// parse and sanitize markdown content
 		desc, err := readMarkdown(issue.Description)
 		if err != nil {
-			return nil, err
+			return IssueMetas{}, err
 		}
 
 		issue.Description = desc
-		parsedIssues = append(parsedIssues, issue)
+		parsedIssues.Issues = append(parsedIssues.Issues, issue)
 	}
 
 	return parsedIssues, nil
