@@ -1,6 +1,7 @@
 package analyzers
 
 import (
+	"context"
 	"os"
 	"path"
 	"testing"
@@ -40,12 +41,13 @@ func TestAnalyzer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = a.SaveReport(report)
+		err = a.SaveReport(report, tempDir)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = analysistest.Run("./testdata/src/staticcheck")
+		ctx := context.Background()
+		err = analysistest.Run("./testdata/src/staticcheck", tempDir, ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -93,12 +95,13 @@ func TestAnalyzer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = a.SaveReport(report)
+		err = a.SaveReport(report, tempDir)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = analysistest.Run("./testdata/src/csslint")
+		ctx := context.Background()
+		err = analysistest.Run("./testdata/src/csslint", tempDir, ctx)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -113,7 +113,8 @@ The report is then saved to `$TOOLBOX_PATH/analysis_report.json`.
 
 	(previous code)
 
-	err = a.SaveReport(report)
+	toolboxPath := os.Getenv("TOOLBOX_PATH")
+	err = a.SaveReport(report, toolboxPath)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -214,7 +215,8 @@ The TOML files are generated at `$REPO_ROOT/.deepsource/analyzers/issues/<IssueC
     // previous code
 
     // generate TOML files for each issue from a parent TOML file
-	err = GenerateTOML()
+	repoRoot := os.Getenv("REPO_ROOT")
+	err = GenerateTOML(repoRoot)
 	if err != nil {
 		log.Fatalln(err)
 	}

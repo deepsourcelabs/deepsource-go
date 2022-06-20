@@ -49,9 +49,8 @@ type ParsedIssues []ParsedIssue
 
 const queryStr = "(comment) @comment"
 
-func Run(directory string) error {
+func Run(directory string, toolboxPath string, ctx context.Context) error {
 	// read the generated report from TOOLBOX_PATH
-	toolboxPath := os.Getenv("TOOLBOX_PATH")
 	generatedFile := path.Join(toolboxPath, "analysis_report.json")
 	reportContent, err := os.ReadFile(generatedFile)
 	if err != nil {
@@ -65,7 +64,7 @@ func Run(directory string) error {
 	}
 
 	// do a verification check for the generated report
-	err = verifyReport(report, directory)
+	err = verifyReport(report, directory, ctx)
 	if err != nil {
 		return err
 	}
@@ -103,7 +102,7 @@ func getFilenames(directory string) ([]string, error) {
 }
 
 // Verify compares the generated report and parsed issues using tree-sitter.
-func verifyReport(report types.AnalysisReport, directory string) error {
+func verifyReport(report types.AnalysisReport, directory string, ctx context.Context) error {
 	var parsedIssues ParsedIssues
 
 	// get filenames
@@ -130,7 +129,6 @@ func verifyReport(report types.AnalysisReport, directory string) error {
 		}
 
 		// generate the tree using tree-sitter
-		ctx := context.Background()
 		tree, err := parser.ParseCtx(ctx, nil, content)
 		if err != nil {
 			return err

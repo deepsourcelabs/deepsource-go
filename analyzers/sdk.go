@@ -86,10 +86,7 @@ func runCmd(command string, args []string, allowedExitCodes []int) (bytes.Buffer
 }
 
 // SaveReport saves the analysis report to the local filesystem.
-func (*CLIRunner) SaveReport(report types.AnalysisReport) error {
-	// get toolbox path from environment variable
-	toolboxPath := os.Getenv("TOOLBOX_PATH")
-
+func (*CLIRunner) SaveReport(report types.AnalysisReport, toolboxPath string) error {
 	// set report location
 	filename := path.Join(toolboxPath, "analysis_report.json")
 
