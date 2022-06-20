@@ -1,0 +1,6 @@
+.button{} /* raise: E001 */
+
+.h1{
+	color: "blue" /* raise: E002 */
+	size: "unknown" /* raise: K001 */
+}

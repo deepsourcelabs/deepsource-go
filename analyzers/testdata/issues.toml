@@ -1,0 +1,17 @@
+[[issues]]
+
+issue_code = "SA4017"
+category = "bug risk"
+title = "Sprint is a pure function but its return value is ignored"
+description = """
+## hello
+"""
+
+[[issues]]
+
+issue_code = "S1039"
+category = "style"
+title = "unnecessary use of fmt.Sprint"
+description = """
+## Example
+"""
