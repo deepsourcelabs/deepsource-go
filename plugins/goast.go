@@ -23,7 +23,7 @@ func (p *GoASTPlugin) String() string {
 	return p.Name
 }
 
-func (p *GoASTPlugin) BuildAST(dir string) ([]*ast.File, error) {
+func (*GoASTPlugin) BuildAST(dir string) ([]*ast.File, error) {
 	var files []*ast.File
 
 	fset := token.NewFileSet()
@@ -61,7 +61,9 @@ func (p *GoASTPlugin) Run(files []*ast.File, strict bool) error {
 				}
 
 				if len(diag) != 0 {
-					log.Println("diagnostic:", diag)
+					if !strict {
+						log.Println("diagnostic:", diag)
+					}
 				}
 			}
 

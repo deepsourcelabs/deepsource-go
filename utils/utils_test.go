@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestGenerateTOMLContent(t *testing.T) {
+func TestWriteTOML(t *testing.T) {
 	var testBuf bytes.Buffer
 
 	normalTOML, err := os.ReadFile("testdata/U001.toml")
@@ -27,14 +27,16 @@ func TestGenerateTOMLContent(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got, err := generateTOMLContent(tc.result, &testBuf)
+		err := writeTOML(tc.result, &testBuf)
 		defer testBuf.Reset()
 		if err != nil && !tc.expectErr {
 			t.Errorf("description: %s, expected error.\n", tc.description)
 		}
 
-		if string(got) != tc.want {
-			t.Errorf("description: %s, got: %v, want: %v\n", tc.description, string(got), tc.want)
+		got := testBuf.String()
+
+		if got != tc.want {
+			t.Errorf("description: %s, got: %v, want: %v\n", tc.description, got, tc.want)
 		}
 	}
 }
