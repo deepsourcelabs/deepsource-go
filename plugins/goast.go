@@ -51,7 +51,7 @@ func (*GoASTPlugin) BuildAST(dir string) ([]*ast.File, error) {
 	return files, nil
 }
 
-func (p *GoASTPlugin) Run(files []*ast.File, strict bool) error {
+func (p *GoASTPlugin) Run(files []*ast.File) error {
 	for _, file := range files {
 		ast.Inspect(file, func(n ast.Node) bool {
 			for _, rule := range p.rules {
@@ -61,9 +61,7 @@ func (p *GoASTPlugin) Run(files []*ast.File, strict bool) error {
 				}
 
 				if len(diag) != 0 {
-					if !strict {
-						log.Println("diagnostic:", diag)
-					}
+					log.Println("diagnostic:", diag)
 				}
 			}
 
