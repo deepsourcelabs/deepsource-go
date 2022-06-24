@@ -21,11 +21,11 @@ func init() {
 }
 
 // ParseAnnotations reads files from a directory and returns a list of issues.
-func ParseAnnotations(dir, codegenPath string) ([]types.Issue, error) {
+func ParseAnnotations(directory, codegenPath string) ([]types.Issue, error) {
 	var issues []types.Issue
 
 	// get filenames
-	files, err := walkDir(dir)
+	files, err := walkDir(directory)
 	if err != nil {
 		return nil, err
 	}
@@ -61,10 +61,15 @@ func ParseAnnotations(dir, codegenPath string) ([]types.Issue, error) {
 }
 
 // walkDir walks over a directory and returns a list of file names.
-func walkDir(dir string) ([]string, error) {
+func walkDir(directory string) ([]string, error) {
 	var files []string
 
-	err := filepath.WalkDir(dir, func(path string, fileInfo fs.DirEntry, err error) error {
+	// check if directory exists before walking
+	if _, err := os.Stat(directory); err != nil {
+		return nil, err
+	}
+
+	err := filepath.WalkDir(directory, func(path string, fileInfo fs.DirEntry, err error) error {
 		// check if it is a directory
 		if !fileInfo.IsDir() {
 			files = append(files, path)

@@ -5,7 +5,6 @@ import (
 	"go/parser"
 	"go/token"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -31,14 +30,18 @@ func (*GoASTPlugin) BuildAST(directory string) ([]*ast.File, error) {
 	var files []*ast.File
 
 	fset := token.NewFileSet()
+
+	// check if directory exists before walking
+	if _, err := os.Stat(directory); err != nil {
+		return nil, err
+	}
+
 	err := filepath.WalkDir(directory, func(path string, fileInfo fs.DirEntry, err error) error {
 		if !fileInfo.IsDir() {
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
-
-			log.Printf("read file: %s\n", path)
 
 			f, err := parser.ParseFile(fset, "", string(content), parser.ParseComments)
 			if err != nil {

@@ -11,7 +11,7 @@ func codeGenerator(pluginAnalyzerMap map[string][]string) *jen.File {
 	var statements []jen.Code
 
 	// generate the plugin import statement
-	pluginImport := jen.Id("p").Op(":=").Qual("github.com/deepsourcelabs/deepsource-go/plugins", "GoASTPlugin").Values(
+	pluginImport := jen.Id("p").Op(":=").Qual("github.com/deepsourcelabs/deepsource-go/plugins/goast", "GoASTPlugin").Values(
 		jen.Dict{
 			jen.Id("Name"): jen.Lit("go-ast"),
 		},

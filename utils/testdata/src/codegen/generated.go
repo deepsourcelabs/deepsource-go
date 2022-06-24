@@ -2,12 +2,12 @@
 package main
 
 import (
-        plugins "github.com/deepsourcelabs/deepsource-go/plugins"
+        goast "github.com/deepsourcelabs/deepsource-go/plugins/goast"
         "log"
 )
 
 func main() {
-        p := plugins.GoASTPlugin{Name: "go-ast"}
+        p := goast.GoASTPlugin{Name: "go-ast"}
         p.RegisterRule(hello)
         p.RegisterRule(hi)
         files, err := p.BuildAST("test_dir")

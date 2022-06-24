@@ -191,15 +191,17 @@ func TestWalkDir(t *testing.T) {
 		description string
 		directory   string
 		want        []string
+		expectErr   bool
 	}
 
 	tests := []test{
-		{description: "walk testdata", directory: "testdata/src/annotations", want: []string{"testdata/src/annotations/empty.go", "testdata/src/annotations/empty_issuecode.go", "testdata/src/annotations/invalid.go", "testdata/src/annotations/multiple.go", "testdata/src/annotations/single.go", "testdata/src/annotations/singleline_comment.go"}},
+		{description: "must walk on valid directory", directory: "testdata/src/annotations", want: []string{"testdata/src/annotations/empty.go", "testdata/src/annotations/empty_issuecode.go", "testdata/src/annotations/invalid.go", "testdata/src/annotations/multiple.go", "testdata/src/annotations/single.go", "testdata/src/annotations/singleline_comment.go"}, expectErr: false},
+		{description: "must return nil for invalid directory", directory: "testdata/src/doesnotexist", want: nil, expectErr: true},
 	}
 
 	for _, tc := range tests {
 		got, err := walkDir(tc.directory)
-		if err != nil {
+		if err != nil && !tc.expectErr {
 			t.Error(err)
 		}
 
