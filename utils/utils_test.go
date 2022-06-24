@@ -18,7 +18,7 @@ func TestWriteTOML(t *testing.T) {
 
 	normalTOML, err := os.ReadFile("testdata/src/issues/U001.toml")
 	if err != nil {
-		t.Error("failed to read testdata.")
+		t.Errorf("failed to read testdata, err: %v\n", err)
 	}
 
 	type test struct {
@@ -54,32 +54,32 @@ func TestTraverseAST(t *testing.T) {
 	////////////////
 	emptyIssueCodeAnnotation, err := os.ReadFile("testdata/src/annotations/empty_issuecode.go")
 	if err != nil {
-		t.Error("failed to read testdata.")
+		t.Errorf("failed to read testdata, err: %v\n", err)
 	}
 
 	emptyAnnotation, err := os.ReadFile("testdata/src/annotations/empty.go")
 	if err != nil {
-		t.Error("failed to read testdata.")
+		t.Errorf("failed to read testdata, err: %v\n", err)
 	}
 
 	invalidAnnotation, err := os.ReadFile("testdata/src/annotations/invalid.go")
 	if err != nil {
-		t.Error("failed to read testdata.")
+		t.Errorf("failed to read testdata, err: %v\n", err)
 	}
 
 	multipleAnnotation, err := os.ReadFile("testdata/src/annotations/multiple.go")
 	if err != nil {
-		t.Error("failed to read testdata.")
+		t.Errorf("failed to read testdata, err: %v\n", err)
 	}
 
 	singleAnnotation, err := os.ReadFile("testdata/src/annotations/single.go")
 	if err != nil {
-		t.Error("failed to read testdata.")
+		t.Errorf("failed to read testdata, err: %v\n", err)
 	}
 
 	singleLineCommentAnnotation, err := os.ReadFile("testdata/src/annotations/singleline_comment.go")
 	if err != nil {
-		t.Error("failed to read testdata.")
+		t.Errorf("failed to read testdata, err: %v\n", err)
 	}
 
 	/////////////
@@ -122,9 +122,9 @@ func TestTraverseAST(t *testing.T) {
 }
 
 func TestCodeGenerator(t *testing.T) {
-	exampleContent, err := os.ReadFile("testdata/src/codegen/example.go")
+	exampleContent, err := os.ReadFile("./testdata/src/codegen/example.go")
 	if err != nil {
-		t.Error("failed to read testdata.")
+		t.Errorf("failed to read testdata, err: %v\n", err)
 	}
 
 	type test struct {
@@ -134,7 +134,7 @@ func TestCodeGenerator(t *testing.T) {
 	}
 
 	tests := []test{
-		{description: "some plugins", pluginAnalyzerMap: map[string][]string{
+		{description: "go/ast plugin with rules", pluginAnalyzerMap: map[string][]string{
 			"go-ast": {"hello", "hi"},
 		}, want: string(exampleContent)},
 	}
