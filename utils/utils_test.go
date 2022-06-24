@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -147,6 +148,39 @@ func TestCodeGenerator(t *testing.T) {
 
 		if !equal {
 			t.Errorf("description: %s, content doesn't match\n", tc.description)
+			t.Log("differences in diffs:", diffs)
+		}
+	}
+}
+
+func TestParseAnnotation(t *testing.T) {
+	type test struct {
+		description string
+		directory   string
+		want        []types.Issue
+	}
+
+	// set temporary directory for code generation
+	tempDir := os.TempDir()
+	codegenPath := filepath.Join(tempDir, "generated-test.go")
+
+	tests := []test{
+		{description: "no annotation should return nil", directory: "testdata/src/annotations/empty.go", want: nil},
+		{description: "multiple annotations should be parsed correctly", directory: "testdata/src/annotations/multiple.go", want: []types.Issue{{IssueCode: "NU001", Category: "style", Title: "notused", Description: "## markdown"}, {IssueCode: "E001", Category: "bug-risk", Title: "handle error", Description: "## markdown"}}},
+	}
+
+	for _, tc := range tests {
+		got, err := ParseAnnotations(tc.directory, codegenPath)
+		if err != nil {
+			t.Error(err)
+		}
+
+		// cleanup
+		defer os.Remove(codegenPath)
+
+		diffs := deep.Equal(got, tc.want)
+		if len(diffs) != 0 {
+			t.Errorf("description: %s, issues don't match\n", tc.description)
 			t.Log("differences in diffs:", diffs)
 		}
 	}

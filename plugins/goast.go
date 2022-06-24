@@ -16,8 +16,9 @@ import (
 type GoASTRuleType func(n ast.Node) ([]types.Diagnostic, error)
 
 type GoASTPlugin struct {
-	Name  string
-	rules []GoASTRuleType
+	Name        string
+	rules       []GoASTRuleType
+	Diagnostics []types.Diagnostic
 }
 
 // String returns the string representation of the plugin
@@ -37,6 +38,8 @@ func (*GoASTPlugin) BuildAST(directory string) ([]*ast.File, error) {
 				return err
 			}
 
+			log.Printf("read file: %s\n", path)
+
 			f, err := parser.ParseFile(fset, "", string(content), parser.ParseComments)
 			if err != nil {
 				return err
@@ -54,7 +57,7 @@ func (*GoASTPlugin) BuildAST(directory string) ([]*ast.File, error) {
 	return files, nil
 }
 
-// Run uses the AST to apply rules and report diagnostics.
+// Run uses the AST to apply rules and record diagnostics.
 func (p *GoASTPlugin) Run(files []*ast.File) error {
 	for _, file := range files {
 		ast.Inspect(file, func(node ast.Node) bool {
@@ -63,10 +66,7 @@ func (p *GoASTPlugin) Run(files []*ast.File) error {
 				if err != nil {
 					return false
 				}
-
-				if len(diagnostic) != 0 {
-					log.Println("diagnostic:", diagnostic)
-				}
+				p.Diagnostics = append(p.Diagnostics, diagnostic...)
 			}
 
 			return true
