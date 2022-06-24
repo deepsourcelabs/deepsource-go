@@ -7,10 +7,6 @@ package annotations
 // title = "Multiple appends can be combined into a single statement"
 // description = """
 // ## markdown
-// ```
-// // comment inside code
-// multi-line code
-// ```
 // """
 func MultipleAppendRule() error {
 	return nil

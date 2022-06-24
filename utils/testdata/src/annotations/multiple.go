@@ -7,10 +7,6 @@ category = "style"
 title = "notused"
 description = """
 ## markdown
-```
-// comment inside code
-multi-line code
-```
 """
 */
 func NotUsedRule() error {
@@ -24,10 +20,6 @@ category = "bug-risk"
 title = "handle error"
 description = """
 ## markdown
-```
-// comment inside code
-multi-line code
-```
 """
 */
 func HandleErrorRule() error {

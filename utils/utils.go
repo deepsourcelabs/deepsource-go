@@ -16,9 +16,12 @@ import (
 // pluginAnalyzerMap represents the pairing between plugins and analyzers.
 var pluginAnalyzerMap map[string][]string
 
+func init() {
+	pluginAnalyzerMap = make(map[string][]string)
+}
+
 // ParseAnnotations reads files from a directory and returns a list of issues.
 func ParseAnnotations(dir, codegenPath string) ([]types.Issue, error) {
-	pluginAnalyzerMap = make(map[string][]string)
 	var issues []types.Issue
 
 	// get filenames
@@ -81,7 +84,7 @@ func traverseAST(f *ast.File) ([]types.Issue, error) {
 	// regular expression for matching annotation body
 	exp, err := regexp.Compile(`(?s)(?P<annotation>.+)\nplugin = "(?P<plugin>.+)"\nissue_code = "(?P<issue_code>.+)"\ncategory = "(?P<category>.+)"\ntitle = "(?P<title>.+)"\ndescription = """\n(?P<description>.*?)\n"""`)
 	if err != nil {
-		return nil, err
+		return []types.Issue{}, err
 	}
 
 	var issues []types.Issue
@@ -90,9 +93,6 @@ func traverseAST(f *ast.File) ([]types.Issue, error) {
 	ast.Inspect(f, func(n ast.Node) bool {
 		// check if the node is a function
 		if node, ok := n.(*ast.FuncDecl); ok {
-			// result is the map containing the content of the named groups of the regular expression
-			result := make(map[string]string)
-
 			// extract comment from the node
 			doc := node.Doc.Text()
 
@@ -106,6 +106,9 @@ func traverseAST(f *ast.File) ([]types.Issue, error) {
 					lines = append(lines, trimmed)
 				}
 				content := strings.Join(lines, "\n")
+
+				// result is the map containing the content of the named groups of the regular expression
+				result := make(map[string]string)
 
 				// find matches using regular expressions
 				match := exp.FindStringSubmatch(content)
@@ -127,7 +130,8 @@ func traverseAST(f *ast.File) ([]types.Issue, error) {
 					issues = append(issues, issue)
 
 					// add plugin-analyzer mapping to our global map
-					pluginAnalyzerMap[result["plugin"]] = append(pluginAnalyzerMap[result["plugin"]], node.Name.String())
+					pluginName := result["plugin"]
+					pluginAnalyzerMap[pluginName] = append(pluginAnalyzerMap[pluginName], node.Name.String())
 				}
 			}
 		}

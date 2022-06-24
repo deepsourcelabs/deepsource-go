@@ -49,10 +49,42 @@ func TestWriteTOML(t *testing.T) {
 }
 
 func TestTraverseAST(t *testing.T) {
+	////////////////
+	// read testdata
+	////////////////
 	emptyIssueCodeAnnotation, err := os.ReadFile("testdata/src/annotations/empty_issuecode.go")
 	if err != nil {
 		t.Error("failed to read testdata.")
 	}
+
+	emptyAnnotation, err := os.ReadFile("testdata/src/annotations/empty.go")
+	if err != nil {
+		t.Error("failed to read testdata.")
+	}
+
+	invalidAnnotation, err := os.ReadFile("testdata/src/annotations/invalid.go")
+	if err != nil {
+		t.Error("failed to read testdata.")
+	}
+
+	multipleAnnotation, err := os.ReadFile("testdata/src/annotations/multiple.go")
+	if err != nil {
+		t.Error("failed to read testdata.")
+	}
+
+	singleAnnotation, err := os.ReadFile("testdata/src/annotations/single.go")
+	if err != nil {
+		t.Error("failed to read testdata.")
+	}
+
+	singleLineCommentAnnotation, err := os.ReadFile("testdata/src/annotations/singleline_comment.go")
+	if err != nil {
+		t.Error("failed to read testdata.")
+	}
+
+	/////////////
+	// run tests
+	/////////////
 
 	type test struct {
 		description string
@@ -61,7 +93,12 @@ func TestTraverseAST(t *testing.T) {
 	}
 
 	tests := []test{
-		{description: "empty issue code should return an error", content: string(emptyIssueCodeAnnotation), want: nil},
+		{description: "empty issue code should return nil", content: string(emptyIssueCodeAnnotation), want: nil},
+		{description: "no annotation should return nil", content: string(emptyAnnotation), want: nil},
+		{description: "invalid annotation should return nil", content: string(invalidAnnotation), want: nil},
+		{description: "multiple annotations should be parsed correctly", content: string(multipleAnnotation), want: []types.Issue{{IssueCode: "NU001", Category: "style", Title: "notused", Description: "## markdown"}, {IssueCode: "E001", Category: "bug-risk", Title: "handle error", Description: "## markdown"}}},
+		{description: "single annotation should be parsed correctly", content: string(singleAnnotation), want: []types.Issue{{IssueCode: "EX01", Category: "example", Title: "Some random rule.", Description: "## markdown"}}},
+		{description: "annotations with single line comments should also be parsed correctly", content: string(singleLineCommentAnnotation), want: []types.Issue{{IssueCode: "P001", Category: "performance", Title: "Multiple appends can be combined into a single statement", Description: "## markdown"}}},
 	}
 
 	for _, tc := range tests {
@@ -123,7 +160,7 @@ func TestWalkDir(t *testing.T) {
 	}
 
 	tests := []test{
-		{description: "walk testdata", directory: "testdata/src/annotations", want: []string{"testdata/src/annotations/empty.go", "testdata/src/annotations/empty_issuecode.go", "testdata/src/annotations/incomplete.go", "testdata/src/annotations/multiple.go", "testdata/src/annotations/single.go", "testdata/src/annotations/singleline_comment.go"}},
+		{description: "walk testdata", directory: "testdata/src/annotations", want: []string{"testdata/src/annotations/empty.go", "testdata/src/annotations/empty_issuecode.go", "testdata/src/annotations/invalid.go", "testdata/src/annotations/multiple.go", "testdata/src/annotations/single.go", "testdata/src/annotations/singleline_comment.go"}},
 	}
 
 	for _, tc := range tests {

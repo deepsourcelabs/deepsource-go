@@ -7,10 +7,6 @@ category = "example"
 title = "Some random rule."
 description = """
 ## markdown
-```
-// comment inside code
-multi-line code
-```
 """
 */
 func ExampleRule() error {

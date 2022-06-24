@@ -1,7 +1,6 @@
 package annotations
 
 /*deepsource:analyzer
-plugin = "go-ast"
 issue_code = "NU001"
 category = ""
 title = ""
