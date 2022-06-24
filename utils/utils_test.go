@@ -122,7 +122,7 @@ func TestTraverseAST(t *testing.T) {
 }
 
 func TestCodeGenerator(t *testing.T) {
-	exampleContent, err := os.ReadFile("./testdata/src/codegen/example.go")
+	exampleContent, err := os.ReadFile("testdata/src/codegen/generated.go")
 	if err != nil {
 		t.Errorf("failed to read testdata, err: %v\n", err)
 	}
