@@ -12,6 +12,7 @@ import (
 	"github.com/deepsourcelabs/deepsource-go/types"
 )
 
+// GoASTRuleType defines the signature of a rule for the go/ast plugin.
 type GoASTRuleType func(n ast.Node) ([]types.Diagnostic, error)
 
 type GoASTPlugin struct {
@@ -19,17 +20,19 @@ type GoASTPlugin struct {
 	rules []GoASTRuleType
 }
 
+// String returns the string representation of the plugin
 func (p *GoASTPlugin) String() string {
 	return p.Name
 }
 
-func (*GoASTPlugin) BuildAST(dir string) ([]*ast.File, error) {
+// BuildAST generates the AST by parsing source code from the directory.
+func (*GoASTPlugin) BuildAST(directory string) ([]*ast.File, error) {
 	var files []*ast.File
 
 	fset := token.NewFileSet()
-	err := filepath.WalkDir(dir, func(path string, fileInfo fs.DirEntry, err error) error {
+	err := filepath.WalkDir(directory, func(path string, fileInfo fs.DirEntry, err error) error {
 		if !fileInfo.IsDir() {
-			content, err := os.ReadFile(filepath.Join(dir, fileInfo.Name()))
+			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
@@ -51,17 +54,18 @@ func (*GoASTPlugin) BuildAST(dir string) ([]*ast.File, error) {
 	return files, nil
 }
 
+// Run uses the AST to apply rules and report diagnostics.
 func (p *GoASTPlugin) Run(files []*ast.File) error {
 	for _, file := range files {
-		ast.Inspect(file, func(n ast.Node) bool {
+		ast.Inspect(file, func(node ast.Node) bool {
 			for _, rule := range p.rules {
-				diag, err := rule(n)
+				diagnostic, err := rule(node)
 				if err != nil {
 					return false
 				}
 
-				if len(diag) != 0 {
-					log.Println("diagnostic:", diag)
+				if len(diagnostic) != 0 {
+					log.Println("diagnostic:", diagnostic)
 				}
 			}
 
@@ -71,6 +75,7 @@ func (p *GoASTPlugin) Run(files []*ast.File) error {
 	return nil
 }
 
+// RegisterRule register a rule for the go/ast plugin.
 func (p *GoASTPlugin) RegisterRule(rule GoASTRuleType) {
 	p.rules = append(p.rules, rule)
 }
