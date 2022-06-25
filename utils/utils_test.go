@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/deepsourcelabs/deepsource-go/types"
-	"github.com/go-test/deep"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestWriteTOML(t *testing.T) {
@@ -114,8 +114,7 @@ func TestTraverseAST(t *testing.T) {
 			t.Error(err)
 		}
 
-		diffs := deep.Equal(got, tc.want)
-		if len(diffs) != 0 {
+		if diffs := cmp.Diff(got, tc.want); diffs != "" {
 			t.Errorf("description: %s, issues don't match\n", tc.description)
 			t.Log("differences in diffs:", diffs)
 		}
@@ -178,8 +177,7 @@ func TestParseAnnotation(t *testing.T) {
 		// cleanup
 		defer os.Remove(codegenPath)
 
-		diffs := deep.Equal(got, tc.want)
-		if len(diffs) != 0 {
+		if diffs := cmp.Diff(got, tc.want); diffs != "" {
 			t.Errorf("description: %s, issues don't match\n", tc.description)
 			t.Log("differences in diffs:", diffs)
 		}
@@ -205,8 +203,7 @@ func TestWalkDir(t *testing.T) {
 			t.Error(err)
 		}
 
-		diffs := deep.Equal(got, tc.want)
-		if len(diffs) != 0 {
+		if diffs := cmp.Diff(got, tc.want); diffs != "" {
 			t.Errorf("description: %s, file names don't match\n", tc.description)
 			t.Log("differences in diffs:", diffs)
 		}
@@ -214,7 +211,7 @@ func TestWalkDir(t *testing.T) {
 }
 
 // checkEquality is a helper for checking string differences. Handles indentation differences, etc.
-func checkEquality(got, want string) ([]string, bool) {
+func checkEquality(got, want string) (string, bool) {
 	var gotLines []string
 	for _, line := range strings.Split(got, "\n") {
 		trimmed := strings.TrimSpace(line)
@@ -227,6 +224,6 @@ func checkEquality(got, want string) ([]string, bool) {
 		wantLines = append(wantLines, trimmed)
 	}
 
-	diff := deep.Equal(gotLines, wantLines)
-	return diff, len(diff) == 0
+	diffs := cmp.Diff(gotLines, wantLines)
+	return diffs, diffs == ""
 }
