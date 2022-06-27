@@ -1,0 +1,4 @@
+issue_code = 'U001'
+category = 'demo'
+title = 'Unused variables'
+description = '# some markdown here'
