@@ -10,11 +10,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestParseAnnotation(t *testing.T) {
+func TestParseAnnotations(t *testing.T) {
 	type test struct {
 		description string
 		directory   string
-		want        []Issue
+		want        Issues
 	}
 
 	// set temporary directory for code generation
@@ -23,7 +23,7 @@ func TestParseAnnotation(t *testing.T) {
 
 	tests := []test{
 		{description: "no annotation should return nil", directory: "testdata/src/annotations/empty.go", want: nil},
-		{description: "multiple annotations should be parsed correctly", directory: "testdata/src/annotations/multiple.go", want: []Issue{{IssueCode: "NU001", Category: "style", Title: "notused", Description: "## markdown"}, {IssueCode: "E001", Category: "bug-risk", Title: "handle error", Description: "## markdown"}}},
+		{description: "multiple annotations should be parsed correctly", directory: "testdata/src/annotations/multiple.go", want: Issues{{IssueCode: "NU001", Category: "style", Title: "notused", Description: "## markdown"}, {IssueCode: "E001", Category: "bug-risk", Title: "handle error", Description: "## markdown"}}},
 	}
 
 	for _, tc := range tests {
@@ -109,16 +109,16 @@ func TestTraverseAST(t *testing.T) {
 	type test struct {
 		description string
 		content     string
-		want        []Issue
+		want        Issues
 	}
 
 	tests := []test{
 		{description: "empty issue code should return nil", content: string(emptyIssueCodeAnnotation), want: nil},
 		{description: "no annotation should return nil", content: string(emptyAnnotation), want: nil},
 		{description: "invalid annotation should return nil", content: string(invalidAnnotation), want: nil},
-		{description: "multiple annotations should be parsed correctly", content: string(multipleAnnotation), want: []Issue{{IssueCode: "NU001", Category: "style", Title: "notused", Description: "## markdown"}, {IssueCode: "E001", Category: "bug-risk", Title: "handle error", Description: "## markdown"}}},
-		{description: "single annotation should be parsed correctly", content: string(singleAnnotation), want: []Issue{{IssueCode: "EX01", Category: "example", Title: "Some random rule.", Description: "## markdown"}}},
-		{description: "annotations with single line comments should also be parsed correctly", content: string(singleLineCommentAnnotation), want: []Issue{{IssueCode: "P001", Category: "performance", Title: "Multiple appends can be combined into a single statement", Description: "## markdown"}}},
+		{description: "multiple annotations should be parsed correctly", content: string(multipleAnnotation), want: Issues{{IssueCode: "NU001", Category: "style", Title: "notused", Description: "## markdown"}, {IssueCode: "E001", Category: "bug-risk", Title: "handle error", Description: "## markdown"}}},
+		{description: "single annotation should be parsed correctly", content: string(singleAnnotation), want: Issues{{IssueCode: "EX01", Category: "example", Title: "Some random rule.", Description: "## markdown"}}},
+		{description: "annotations with single line comments should also be parsed correctly", content: string(singleLineCommentAnnotation), want: Issues{{IssueCode: "P001", Category: "performance", Title: "Multiple appends can be combined into a single statement", Description: "## markdown"}}},
 	}
 
 	for _, tc := range tests {

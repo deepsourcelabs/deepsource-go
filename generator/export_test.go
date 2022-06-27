@@ -27,7 +27,7 @@ func TestWriteTOML(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		err := writeTOML(tc.issue, &testBuf)
+		err := tc.issue.writeTOML(&testBuf)
 		defer testBuf.Reset()
 		if err != nil && !tc.expectErr {
 			t.Errorf("description: %s, expected error.\n", tc.description)

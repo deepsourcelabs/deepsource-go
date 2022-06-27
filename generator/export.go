@@ -10,8 +10,10 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
+type Issues []Issue
+
 // WriteIssues writes issues extracted from ParseAnnotations to the respective TOML files (issue_code.toml)
-func WriteIssues(issues []Issue, dir string) error {
+func (issues Issues) WriteIssues(dir string) error {
 	for _, issue := range issues {
 		if issue.IssueCode != "" {
 			fname := fmt.Sprintf("%s.toml", issue.IssueCode)
@@ -22,7 +24,7 @@ func WriteIssues(issues []Issue, dir string) error {
 				return err
 			}
 
-			err = writeTOML(issue, f)
+			err = issue.writeTOML(f)
 			if err != nil {
 				return err
 			}
@@ -33,7 +35,7 @@ func WriteIssues(issues []Issue, dir string) error {
 }
 
 // generateTOMLContent generates the TOML content for an issue.
-func generateTOMLContent(issue Issue) ([]byte, error) {
+func (issue Issue) generateTOMLContent() ([]byte, error) {
 	// only generate content if the issue code is not empty
 	if issue.IssueCode != "" {
 		content, err := toml.Marshal(issue)
@@ -49,8 +51,8 @@ func generateTOMLContent(issue Issue) ([]byte, error) {
 }
 
 // writeTOML writes the TOML content for an issue to a TOML file.
-func writeTOML(issue Issue, w io.Writer) error {
-	content, err := generateTOMLContent(issue)
+func (issue Issue) writeTOML(w io.Writer) error {
+	content, err := issue.generateTOMLContent()
 	if err != nil {
 		return err
 	}

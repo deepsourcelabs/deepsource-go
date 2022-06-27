@@ -19,9 +19,8 @@ func init() {
 }
 
 // ParseAnnotations reads files from a directory and returns a list of issues.
-func ParseAnnotations(directory, codegenPath string) ([]Issue, error) {
-	var issues []Issue
-
+func ParseAnnotations(directory, codegenPath string) (Issues, error) {
+	var issues Issues
 	// get filenames
 	files, err := walkDir(directory)
 	if err != nil {
@@ -83,14 +82,14 @@ func walkDir(directory string) ([]string, error) {
 }
 
 // traverseAST traverses the AST and parses annotations. It returns a list of issues.
-func traverseAST(f *ast.File) ([]Issue, error) {
+func traverseAST(f *ast.File) (Issues, error) {
 	// regular expression for matching annotation body
 	exp, err := regexp.Compile(`(?s)(?P<annotation>.+)\nanalyzer = "(?P<analyzer>.+)"\nissue_code = "(?P<issue_code>.+)"\ncategory = "(?P<category>.+)"\ntitle = "(?P<title>.+)"\ndescription = """\n(?P<description>.*?)\n"""`)
 	if err != nil {
-		return []Issue{}, err
+		return Issues{}, err
 	}
 
-	var issues []Issue
+	var issues Issues
 
 	// traverse AST
 	ast.Inspect(f, func(n ast.Node) bool {
@@ -99,43 +98,45 @@ func traverseAST(f *ast.File) ([]Issue, error) {
 			// extract comment from the node
 			doc := node.Doc.Text()
 
-			// check if the comment contains the "deepsource:rule" annotation
-			if strings.Contains(doc, "deepsource:rule") {
-				// handle both type of comments: a multi-line comment, or a single-line comment over multiple lines
-				// trim the "// " prefix in the case of single-line comment over multiple lines
-				var lines []string
-				for _, line := range strings.Split(doc, "\n") {
-					trimmed := strings.TrimPrefix(line, "// ")
-					lines = append(lines, trimmed)
-				}
-				content := strings.Join(lines, "\n")
+			// exit early if the comment doesn't contain the "deepsource:rule" annotation
+			if !strings.Contains(doc, "deepsource:rule") {
+				return false
+			}
 
-				// namedGroups is the map containing the content of the named groups of the regular expression
-				namedGroups := make(map[string]string)
+			// handle both type of comments: a multi-line comment, or a single-line comment over multiple lines
+			// trim the "// " prefix in the case of single-line comment over multiple lines
+			var lines []string
+			for _, line := range strings.Split(doc, "\n") {
+				trimmed := strings.TrimPrefix(line, "// ")
+				lines = append(lines, trimmed)
+			}
+			content := strings.Join(lines, "\n")
 
-				// find matches using regular expressions
-				match := exp.FindStringSubmatch(content)
-				if len(match) > 0 {
-					for i, name := range exp.SubexpNames() {
-						if i != 0 && name != "" {
-							namedGroups[name] = match[i]
-						}
+			// namedGroups is the map containing the content of the named groups of the regular expression
+			namedGroups := make(map[string]string)
+
+			// find matches using regular expressions
+			match := exp.FindStringSubmatch(content)
+			if len(match) > 0 {
+				for i, name := range exp.SubexpNames() {
+					if i != 0 && name != "" {
+						namedGroups[name] = match[i]
 					}
 				}
+			}
 
-				if len(namedGroups) != 0 {
-					issue := Issue{
-						IssueCode:   namedGroups["issue_code"],
-						Category:    namedGroups["category"],
-						Title:       namedGroups["title"],
-						Description: namedGroups["description"],
-					}
-					issues = append(issues, issue)
-
-					// add analyzer-analyzer mapping to our global map
-					analyzerName := namedGroups["analyzer"]
-					analyzerRuleMap[analyzerName] = append(analyzerRuleMap[analyzerName], node.Name.String())
+			if len(namedGroups) != 0 {
+				issue := Issue{
+					IssueCode:   namedGroups["issue_code"],
+					Category:    namedGroups["category"],
+					Title:       namedGroups["title"],
+					Description: namedGroups["description"],
 				}
+				issues = append(issues, issue)
+
+				// add analyzer-analyzer mapping to our global map
+				analyzerName := namedGroups["analyzer"]
+				analyzerRuleMap[analyzerName] = append(analyzerRuleMap[analyzerName], node.Name.String())
 			}
 		}
 
