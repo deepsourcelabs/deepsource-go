@@ -1,4 +1,4 @@
-package plugins
+package analyzers
 
 import (
 	"go/ast"
@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/deepsourcelabs/deepsource-go/plugins/goast/testdata/src/rules"
+	rules "github.com/deepsourcelabs/deepsource-go/analyzers/goast/testdata/src/rules"
 )
 
 func TestBuildAST(t *testing.T) {
@@ -22,9 +22,6 @@ func TestBuildAST(t *testing.T) {
 	/////////////////////
 	// prepare for tests
 	/////////////////////
-
-	// create plugin for test
-	p := GoASTPlugin{Name: "go-ast"}
 
 	// read directory and get AST
 	var files []*ast.File
@@ -49,7 +46,7 @@ func TestBuildAST(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got, err := p.BuildAST(tc.directory)
+		got, err := buildAST(tc.directory)
 		if err != nil && !tc.expectErr {
 			t.Error(err)
 		}
@@ -71,8 +68,8 @@ func TestRun(t *testing.T) {
 	// prepare for tests
 	/////////////////////
 
-	// create plugin for test
-	p := GoASTPlugin{Name: "go-ast"}
+	// create analyzer for test
+	p := GoASTAnalyzer{Name: "go-ast"}
 	p.RegisterRule(rules.NeedFunc)
 
 	/////////////
@@ -85,12 +82,7 @@ func TestRun(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		files, err := p.BuildAST(tc.directory)
-		if err != nil && !tc.expectErr {
-			t.Error(err)
-		}
-
-		err = p.Run(files)
+		err := p.Run(tc.directory)
 		if err != nil && !tc.expectErr {
 			t.Error(err)
 		}

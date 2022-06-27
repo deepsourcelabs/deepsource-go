@@ -1,7 +1,7 @@
 package annotations
 
-/*deepsource:analyzer
-plugin = "go-ast"
+/*deepsource:rule
+analyzer = "go-ast"
 issue_code = ""
 category = "style"
 title = "notused"

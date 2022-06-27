@@ -1,7 +1,7 @@
 package trigger
 
-/*deepsource:analyzer
-plugin = "go-ast"
+/*deepsource:rule
+analyzer = "go-ast"
 issue_code = "MY001"
 category = "example"
 title = "Just a func."

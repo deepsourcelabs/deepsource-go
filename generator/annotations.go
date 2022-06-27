@@ -1,4 +1,4 @@
-package utils
+package generator
 
 import (
 	"go/ast"
@@ -9,20 +9,18 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"github.com/deepsourcelabs/deepsource-go/types"
 )
 
-// pluginAnalyzerMap represents the pairing between plugins and analyzers.
-var pluginAnalyzerMap map[string][]string
+// analyzerRuleMap represents the pairing between analyzers and analyzers.
+var analyzerRuleMap map[string][]string
 
 func init() {
-	pluginAnalyzerMap = make(map[string][]string)
+	analyzerRuleMap = make(map[string][]string)
 }
 
 // ParseAnnotations reads files from a directory and returns a list of issues.
-func ParseAnnotations(directory, codegenPath string) ([]types.Issue, error) {
-	var issues []types.Issue
+func ParseAnnotations(directory, codegenPath string) ([]Issue, error) {
+	var issues []Issue
 
 	// get filenames
 	files, err := walkDir(directory)
@@ -54,7 +52,7 @@ func ParseAnnotations(directory, codegenPath string) ([]types.Issue, error) {
 	}
 
 	// get generated code and save to codegenPath
-	generatedCode := codeGenerator(pluginAnalyzerMap)
+	generatedCode := codeGenerator(analyzerRuleMap)
 	generatedCode.Save(codegenPath)
 
 	return issues, nil
@@ -85,14 +83,14 @@ func walkDir(directory string) ([]string, error) {
 }
 
 // traverseAST traverses the AST and parses annotations. It returns a list of issues.
-func traverseAST(f *ast.File) ([]types.Issue, error) {
+func traverseAST(f *ast.File) ([]Issue, error) {
 	// regular expression for matching annotation body
-	exp, err := regexp.Compile(`(?s)(?P<annotation>.+)\nplugin = "(?P<plugin>.+)"\nissue_code = "(?P<issue_code>.+)"\ncategory = "(?P<category>.+)"\ntitle = "(?P<title>.+)"\ndescription = """\n(?P<description>.*?)\n"""`)
+	exp, err := regexp.Compile(`(?s)(?P<annotation>.+)\nanalyzer = "(?P<analyzer>.+)"\nissue_code = "(?P<issue_code>.+)"\ncategory = "(?P<category>.+)"\ntitle = "(?P<title>.+)"\ndescription = """\n(?P<description>.*?)\n"""`)
 	if err != nil {
-		return []types.Issue{}, err
+		return []Issue{}, err
 	}
 
-	var issues []types.Issue
+	var issues []Issue
 
 	// traverse AST
 	ast.Inspect(f, func(n ast.Node) bool {
@@ -101,8 +99,8 @@ func traverseAST(f *ast.File) ([]types.Issue, error) {
 			// extract comment from the node
 			doc := node.Doc.Text()
 
-			// check if the comment contains the "deepsource:analyzer" annotation
-			if strings.Contains(doc, "deepsource:analyzer") {
+			// check if the comment contains the "deepsource:rule" annotation
+			if strings.Contains(doc, "deepsource:rule") {
 				// handle both type of comments: a multi-line comment, or a single-line comment over multiple lines
 				// trim the "// " prefix in the case of single-line comment over multiple lines
 				var lines []string
@@ -112,31 +110,31 @@ func traverseAST(f *ast.File) ([]types.Issue, error) {
 				}
 				content := strings.Join(lines, "\n")
 
-				// result is the map containing the content of the named groups of the regular expression
-				result := make(map[string]string)
+				// namedGroups is the map containing the content of the named groups of the regular expression
+				namedGroups := make(map[string]string)
 
 				// find matches using regular expressions
 				match := exp.FindStringSubmatch(content)
 				if len(match) > 0 {
 					for i, name := range exp.SubexpNames() {
 						if i != 0 && name != "" {
-							result[name] = match[i]
+							namedGroups[name] = match[i]
 						}
 					}
 				}
 
-				if len(result) != 0 {
-					issue := types.Issue{
-						IssueCode:   result["issue_code"],
-						Category:    result["category"],
-						Title:       result["title"],
-						Description: result["description"],
+				if len(namedGroups) != 0 {
+					issue := Issue{
+						IssueCode:   namedGroups["issue_code"],
+						Category:    namedGroups["category"],
+						Title:       namedGroups["title"],
+						Description: namedGroups["description"],
 					}
 					issues = append(issues, issue)
 
-					// add plugin-analyzer mapping to our global map
-					pluginName := result["plugin"]
-					pluginAnalyzerMap[pluginName] = append(pluginAnalyzerMap[pluginName], node.Name.String())
+					// add analyzer-analyzer mapping to our global map
+					analyzerName := namedGroups["analyzer"]
+					analyzerRuleMap[analyzerName] = append(analyzerRuleMap[analyzerName], node.Name.String())
 				}
 			}
 		}

@@ -1,6 +1,6 @@
 package annotations
 
-/*deepsource:analyzer
+/*deepsource:rule
 issue_code = "NU001"
 category = ""
 title = ""

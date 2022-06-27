@@ -1,4 +1,4 @@
-package plugins
+package analyzers
 
 import (
 	"go/ast"
@@ -8,25 +8,25 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/deepsourcelabs/deepsource-go/types"
+	"github.com/deepsourcelabs/deepsource-go/analyzers"
 )
 
-// GoASTRuleType defines the signature of a rule for the go/ast plugin.
-type GoASTRuleType func(n ast.Node) ([]types.Diagnostic, error)
+// GoASTRuleType defines the signature of a rule for the go/ast analyzer.
+type GoASTRuleType func(n ast.Node) ([]analyzers.Diagnostic, error)
 
-type GoASTPlugin struct {
+type GoASTAnalyzer struct {
 	Name        string
 	rules       []GoASTRuleType
-	Diagnostics []types.Diagnostic
+	Diagnostics []analyzers.Diagnostic
 }
 
-// String returns the string representation of the plugin
-func (p *GoASTPlugin) String() string {
+// String returns the string representation of the analyzer
+func (p *GoASTAnalyzer) String() string {
 	return p.Name
 }
 
-// BuildAST generates the AST by parsing source code from the directory.
-func (*GoASTPlugin) BuildAST(directory string) ([]*ast.File, error) {
+// buildAST generates the AST by parsing source code from the directory.
+func buildAST(directory string) ([]*ast.File, error) {
 	var files []*ast.File
 
 	fset := token.NewFileSet()
@@ -61,7 +61,12 @@ func (*GoASTPlugin) BuildAST(directory string) ([]*ast.File, error) {
 }
 
 // Run uses the AST to apply rules and record diagnostics.
-func (p *GoASTPlugin) Run(files []*ast.File) error {
+func (p *GoASTAnalyzer) Run(directory string) error {
+	files, err := buildAST(directory)
+	if err != nil {
+		return err
+	}
+
 	for _, file := range files {
 		ast.Inspect(file, func(node ast.Node) bool {
 			for _, rule := range p.rules {
@@ -75,10 +80,11 @@ func (p *GoASTPlugin) Run(files []*ast.File) error {
 			return true
 		})
 	}
+
 	return nil
 }
 
-// RegisterRule register a rule for the go/ast plugin.
-func (p *GoASTPlugin) RegisterRule(rule GoASTRuleType) {
+// RegisterRule registers a rule for the go/ast analyzer.
+func (p *GoASTAnalyzer) RegisterRule(rule GoASTRuleType) {
 	p.rules = append(p.rules, rule)
 }

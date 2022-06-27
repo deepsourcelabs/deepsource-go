@@ -1,4 +1,4 @@
-package types
+package analyzers
 
 import "go/token"
 

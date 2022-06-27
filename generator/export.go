@@ -1,26 +1,28 @@
-package utils
+package generator
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
-	"github.com/deepsourcelabs/deepsource-go/types"
 	"github.com/pelletier/go-toml/v2"
 )
 
 // WriteIssues writes issues extracted from ParseAnnotations to the respective TOML files (issue_code.toml)
-func WriteIssues(issues []types.Issue, dir string) error {
-	for _, result := range issues {
-		if result.IssueCode != "" {
-			fname := dir + result.IssueCode + ".toml"
+func WriteIssues(issues []Issue, dir string) error {
+	for _, issue := range issues {
+		if issue.IssueCode != "" {
+			fname := fmt.Sprintf("%s.toml", issue.IssueCode)
+			fpath := filepath.Join(dir, fname)
 
-			f, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE, 0600)
+			f, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE, 0600)
 			if err != nil {
 				return err
 			}
 
-			err = writeTOML(result, f)
+			err = writeTOML(issue, f)
 			if err != nil {
 				return err
 			}
@@ -30,8 +32,8 @@ func WriteIssues(issues []types.Issue, dir string) error {
 	return nil
 }
 
-// generateTOMLContent generates the TOML content for an issue using the result map.
-func generateTOMLContent(issue types.Issue) ([]byte, error) {
+// generateTOMLContent generates the TOML content for an issue.
+func generateTOMLContent(issue Issue) ([]byte, error) {
 	// only generate content if the issue code is not empty
 	if issue.IssueCode != "" {
 		content, err := toml.Marshal(issue)
@@ -47,7 +49,7 @@ func generateTOMLContent(issue types.Issue) ([]byte, error) {
 }
 
 // writeTOML writes the TOML content for an issue to a TOML file.
-func writeTOML(issue types.Issue, w io.Writer) error {
+func writeTOML(issue Issue, w io.Writer) error {
 	content, err := generateTOMLContent(issue)
 	if err != nil {
 		return err

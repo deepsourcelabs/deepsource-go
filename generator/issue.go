@@ -1,4 +1,4 @@
-package types
+package generator
 
 type Issue struct {
 	IssueCode   string `toml:"issue_code"`

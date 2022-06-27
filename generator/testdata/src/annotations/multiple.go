@@ -1,7 +1,7 @@
 package annotations
 
-/*deepsource:analyzer
-plugin = "go-ast"
+/*deepsource:rule
+analyzer = "go-ast"
 issue_code = "NU001"
 category = "style"
 title = "notused"
@@ -13,8 +13,8 @@ func NotUsedRule() error {
 	return nil
 }
 
-/*deepsource:analyzer
-plugin = "go-ast"
+/*deepsource:rule
+analyzer = "go-ast"
 issue_code = "E001"
 category = "bug-risk"
 title = "handle error"
